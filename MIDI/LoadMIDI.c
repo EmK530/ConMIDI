@@ -48,8 +48,8 @@ void ParseTrack(unsigned long int id, int thres, unsigned long int size){
     memset(skippedNotes,0,sizeof(skippedNotes));
     byte prevEvent = 0;
     Seek(trackPositions[id]);
-    SynthEvents[id] = malloc(size * sizeof(struct SynthEvent));
-    Tempos[id] = malloc(size * sizeof(struct SynthEvent));
+    SynthEvents[id] = malloc(size/3 * sizeof(struct SynthEvent));
+    Tempos[id] = malloc(size/6 * sizeof(struct SynthEvent));
     eventCounts[id] = 0;
     tempoCounts[id] = 0;
     float trackTime = 0;
