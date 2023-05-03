@@ -6,12 +6,13 @@
 #include "MIDI/LoadMIDI.c"
 
 FILE *file_ptr;
-char version[] = "Prerelease 1";
+char version[] = "Prerelease 2";
 char* title;
 int main(){
     printf("ConMIDI %s\n\n",version);
     title = concat("ConMIDI ", version);
-    SetConsoleTitle(title);
+    prgTitle = title;
+    SetConsoleTitle(prgTitle);
     //Check for sound engines
     Sound_Setup();
     //Start sound selection if more than one sound engine is available otherwise auto load only available engine
