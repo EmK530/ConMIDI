@@ -31,6 +31,7 @@ void StartPlayback(){
             trackFinished[i] = FALSE;
         }
     }
+    int (*SendDirectData)(DWORD) = SendDirectDataPtr;
     while(TRUE){
         long long tempT = timeInMilliseconds();
         if((long)(tempT-startTime)>=16){
@@ -92,7 +93,7 @@ void StartPlayback(){
                     int temp_eC = *eC;
                     struct SynthEvent *curr = SynthEvents[i] + temp_tIDX;
                     while(curr->pos <= clock){        
-                        (*SendDirectDataPtr)(curr->event);
+                        SendDirectData(curr->event);
                         temp_tIDX++;
                         if(temp_tIDX>=temp_eC){
                             //printf("\nKilled track %lu",i+1);
