@@ -9,7 +9,7 @@ KDM_INIT KDMAPI_TerminateKDMAPIStream;
 KDM_INIT KDMAPI_ResetKDMAPIStream;
 KDM_SEND KDMAPI_SendDirectData;
 int KDMAPI_Setup(){
-    if ((KDMAPI_libHandle = LoadLibrary("OmniMIDI\\OmniMIDI")) == NULL)
+    if ((KDMAPI_libHandle = LoadLibrary("OmniMIDI")) == NULL)
     {
         printf("KDMAPI not available.\n");
         return 0;
