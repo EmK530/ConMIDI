@@ -112,6 +112,7 @@ void StartPlayback(){
         }
         if(aliveTracks == 0){
             printf("\nRan out of events, ending playback.");
+            sleep(3);
             exit(0);
         }
     }
