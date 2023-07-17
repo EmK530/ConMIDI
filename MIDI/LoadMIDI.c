@@ -5,8 +5,8 @@
 #include "DataStorage.c"
 #include "../Playback/MainPlayer.c"
 
-unsigned long int *trackPositions;
-unsigned long int *trackSizes;
+long long int lastPos = 0;
+unsigned long int lastSize = 0;
 
 int TextSearch(char text[]){
     unsigned char* str = ReadRange(strlen(text));
@@ -14,21 +14,6 @@ int TextSearch(char text[]){
     free(str);
     return 1-res;
 }
-
-int IndexTrack(){
-    if(TextSearch("MTrk")==1){
-        unsigned long int size = (ReadFast()*16777216)+(ReadFast()*65536)+(ReadFast()*256)+ReadFast();
-        trackPositions[realTracks]=filePos+bufPos;
-        trackSizes[realTracks]=size;
-        //printf("\nTrack %u | Size %lu",realTracks+1,size);
-        bufPos+=size;
-        return 1;
-    } else {
-        printf("\nTextSearch failed at %lu",filePos+bufPos);
-        return 0;
-    }
-}
-
 long long ReadVariableLen(){
     byte temp;
     long long val = 0;
@@ -43,20 +28,28 @@ long long ReadVariableLen(){
     }
     return val;
 }
-void ParseTrack(unsigned long int id, int thres, unsigned long int size){
+char ParseTrack(unsigned long int id, int thres){
     unsigned long int skippedNotes[16][256];
     memset(skippedNotes,0,sizeof(skippedNotes));
     byte prevEvent = 0;
-    Seek(trackPositions[id]);
-    SynthEvents[id] = malloc(size/3 * sizeof(struct SynthEvent));
-    Tempos[id] = malloc(size/6 * sizeof(struct SynthEvent));
+    if(lastPos!=0){
+        Seek(lastPos+lastSize+8);
+    }
+    lastPos=filePos+bufPos;
+    if(TextSearch("MTrk")!=1){
+        printf("\nTextSearch failed at %lu",filePos+bufPos);
+        return 1;
+    }
+    lastSize = (ReadFast()*16777216)+(ReadFast()*65536)+(ReadFast()*256)+ReadFast();
+    printf("\nTrack %hu / %hu | Size %lu",id+1,fakeTracks,lastSize);
+    SynthEvents[id] = malloc(lastSize/3 * sizeof(struct SynthEvent));
+    Tempos[id] = malloc(lastSize/6 * sizeof(struct SynthEvent));
     eventCounts[id] = 0;
     tempoCounts[id] = 0;
     float trackTime = 0;
     unsigned long int idx = 0;
     unsigned long int idx2 = 0;
-    unsigned long int start = filePos+bufPos;
-    while((filePos+bufPos)-start<size){
+    while((filePos+bufPos)-lastPos<lastSize){
         trackTime += ReadVariableLen();
         byte readEvent = ReadFast();
         if(readEvent < 0x80){
@@ -178,12 +171,10 @@ void ParseTrack(unsigned long int id, int thres, unsigned long int size){
                                 byte temp = Read();
                                 tempo = (tempo<<8)|temp;
                             }
-                            //printf("\nAdding tempo %lu",tempo);
                             struct SynthEvent eventToAdd2 = { trackTime, tempo };
                             Tempos[id][idx2]=eventToAdd2;
                             idx2++;
                             tempoCounts[id]++;
-                            //printf("\nAdded tempo %lu",tempo);
                         } else if(readEvent == 0x2F){
                             break;
                         } else {
@@ -198,12 +189,11 @@ void ParseTrack(unsigned long int id, int thres, unsigned long int size){
     }
     realloc(SynthEvents[id], idx * sizeof(struct SynthEvent));
     realloc(Tempos[id], idx2 * sizeof(struct SynthEvent));
+    return 0;
 }
 
 void LoadMIDI(char path[], int thres, unsigned int bs){
     BufferInit(path, 0, bs);
-    trackPositions = malloc(65535 * sizeof(unsigned long int));
-    trackSizes = malloc(65535 * sizeof(unsigned long int));
     if(TextSearch("MThd")==0){
         error("MIDI header not found");
     }
@@ -214,31 +204,25 @@ void LoadMIDI(char path[], int thres, unsigned int bs){
     printf("\nFormat: %d",format);
     printf("\nExpected Track Count: %d",fakeTracks);
     printf("\nPPQ: %d",ppq);
-    printf("\nIndexing tracks...");
-    while(realTracks<fakeTracks){
-        if(IndexTrack()==1){
-            realTracks++;
-        } else {
-            printf("\nIndexing done");
+    eventCounts = malloc(fakeTracks * sizeof(unsigned long int));
+    tempoCounts = malloc(fakeTracks * sizeof(unsigned long int));
+    ResizeBuffer(100000000);
+    printf("\nBegin parsing...");
+    SynthEvents = malloc(fakeTracks * sizeof(struct SynthEvent *));
+    Tempos = malloc(fakeTracks * sizeof(struct SynthEvent *));
+    int i = 0;
+    for(i = 0; i < fakeTracks; i++){
+        if(ParseTrack(i,thres)==1){
             break;
         }
     }
-    realloc(trackPositions, realTracks * sizeof(unsigned long int));
-    realloc(trackSizes, realTracks * sizeof(unsigned long int));
-    eventCounts = malloc(realTracks * sizeof(unsigned long int));
-    tempoCounts = malloc(realTracks * sizeof(unsigned long int));
-    ResizeBuffer(100000000);
-    printf("\nIndexed %d tracks",realTracks);
-    printf("\nBegin parsing...");
-    SynthEvents = malloc(realTracks * sizeof(struct SynthEvent *));
-    Tempos = malloc(realTracks * sizeof(struct SynthEvent *));
-    for(int i = 0; i < realTracks; i++){
-        printf("\nTrack %hu / %hu | Size %lu",i+1,realTracks,trackSizes[i]);
-        ParseTrack(i,thres,trackSizes[i]);
-    }
+    realTracks=i;
+    printf("\nLoaded %d tracks",realTracks);
+    SynthEvents = realloc(SynthEvents, realTracks * sizeof(struct SynthEvent));
+    Tempos = realloc(Tempos, realTracks * sizeof(struct SynthEvent));
+    eventCounts = realloc(eventCounts, realTracks * sizeof(unsigned long int));
+    tempoCounts = realloc(tempoCounts, realTracks * sizeof(unsigned long int));
     printf("\nLoaded %lu notes.",notes);
-    free(trackPositions);
-    free(trackSizes);
     free(buffer);
     printf("\nBeginning playback...");
     StartPlayback();
