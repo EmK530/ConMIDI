@@ -36,7 +36,7 @@ void StartPlayback(){
         long long tempT = timeInMilliseconds();
         if((long)(tempT-startTime)>=16){
             if((long)(tempT-startTime2)>=1000){
-                printf("\nFPS: %f",(float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames));
+                printf("\nFPS: %.10g",(float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames));
                 totalFrames = 0;
                 startTime2 = tempT;
             }
@@ -55,7 +55,7 @@ void StartPlayback(){
             sprintf(num, "%llu", events);
             strcat(temp,num);
             strcat(temp," | BPM: ");
-            sprintf(fpstemp, "%lf", bpm);
+            sprintf(fpstemp, "%.5g", bpm);
             strcat(temp,fpstemp);
             SetConsoleTitle(temp);
         }
