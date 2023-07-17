@@ -24,6 +24,8 @@ gcc ConMIDI.c -Ofast -s -ffast-math -lcomdlg32 -o ConMIDI
 
 ## Credits
 
-#### Contributors: @Lurmog
+#### Contributors:
+
+[Lurmog](https://github.com/Lurmog) (File dialog support)
 
 #### Zenith-MIDI's [MidiTrack.cs](https://github.com/arduano/Zenith-MIDI/blob/master/BMEngine/MidiTrack.cs) which the loading code is inspired by.
