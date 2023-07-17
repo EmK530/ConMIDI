@@ -34,17 +34,31 @@ int main(){
         }
     }
     //File path input
-    char path[256];
-    char fixedPath[256];
+    char path[260];
+    char fixedPath[260];
     while(TRUE){
-        printf("\n[Prompt 1 / 2] Enter file path: ");
-        scanf("%256[^\n]",path);
-        fflush(stdin);
+        printf("\n[Prompt 1 / 2] Select a MIDI\n");
+        OPENFILENAME ofn;
+        ZeroMemory(&ofn, sizeof(ofn));
+        ofn.lStructSize = sizeof(ofn);
+        ofn.lpstrFilter = "MIDI Files\0*.mid\0";
+        ofn.lpstrFile = path;
+        ofn.nMaxFile = sizeof(path);
+        ofn.lpstrTitle = "Select a MIDI file";
+        ofn.Flags = OFN_DONTADDTORECENT | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+        if(!GetOpenFileName(&ofn)){
+            printf("No file selected.");
+            memset(path, 0, sizeof(path));
+            printf("\n[Prompt 1 / 2] Enter file path: ");
+            scanf("%260[^\n]",path);
+            fflush(stdin);
+        }
         removeSymbol(path,'\"',fixedPath);
         if(access(fixedPath, F_OK) != -1){
             break;
         } else {
-            printf("Invalid path\n");
+            printf("Invalid path");
+            memset(path, 0, sizeof(path));
         }
     }
     //Threshold input
