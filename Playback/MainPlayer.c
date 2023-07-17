@@ -35,8 +35,8 @@ void StartPlayback(){
     while(TRUE){
         long long tempT = timeInMilliseconds();
         if((long)(tempT-startTime)>=16){
-            if((long)(tempT-startTime2)>=1000){
-                printf("\nFPS: %.10g",(float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames));
+            if((long)(tempT-startTime2)>=100){
+                printf("\nFPS: %.10g",(float)1/((float)(tempT-startTime2)/(float)100/(float)totalFrames));
                 totalFrames = 0;
                 startTime2 = tempT;
             }
