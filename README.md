@@ -10,9 +10,11 @@ I am a new C programmer, so there can very well be some bad practices used in th
 
 ## Prerequisites
 
-This app is currently not finalized yet, so it is solely developed for use with: [OmniMIDI](https://github.com/KeppySoftware/OmniMIDI/releases) and XSynth.
+Recommended use with this MIDI player for performance is the [OmniMIDI](https://github.com/KeppySoftware/OmniMIDI/releases) synth.
 
-Like with SharpMIDI, you can use a XSynth DLL named "XSynth.dll" however OmniMIDI is recommended.
+XSynth is also supported, similar to SharpMIDI you can use a XSynth DLL named "XSynth.dll"
+
+If you have neither of these you can choose the "WinMM" device.
 
 ## How to build
 
