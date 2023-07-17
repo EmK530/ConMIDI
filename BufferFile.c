@@ -19,9 +19,7 @@ void BufferInit(char path[], unsigned long seek, unsigned int bufSizee){
         perror("Could not open file path");
         return;
     }
-    //printf("\nAllocating buffer of size %u...",bufSize);
     buffer = malloc(bufSize);
-    //printf("\nReading file to buffer... (%lu)",bufSize);
     bufRange = fread(buffer, 1, bufSize, midi);
     curSeek += filePos+bufRange;
     fileEnded = (bufRange != bufSize);
@@ -29,23 +27,11 @@ void BufferInit(char path[], unsigned long seek, unsigned int bufSizee){
 void UpdateBuffer(){
     if(!fileEnded){
         filePos+=bufPos;
-        //printf("\nFSEEK %lu",filePos);
-        //printf("\nFSEEK %lu",filePos-curSeek);
-        //printf("\nCURSEEK %lu",curSeek);
-        //printf("\nFTELL %lu",ftell(midi));
         fseeko(midi,filePos-curSeek,SEEK_CUR);
-        //printf("\nFTELL %lu",ftell(midi));
         bufRange = fread(buffer, 1, bufSize, midi);
         curSeek = filePos+bufRange;
-        //printf("\nCURSEEK %lu",curSeek);
         fileEnded = (bufRange != bufSize);
-        //printf("\nReading file to buffer... (%lu)",bufSize);
-        if(fileEnded){
-            //printf("\nBuffer reached end of file at %lu",filePos);
-        }
         bufPos = 0;
-    } else {
-        //printf("\nBuffer not updating, file ended.");
     }
 }
 void Seek(long long pos){
@@ -79,7 +65,7 @@ void ResizeBuffer(unsigned long int size){
     bufSize = size;
     free(buffer);
     buffer = malloc(size);
-    ResetBuffer();
+    UpdateBuffer();
 }
 unsigned char Read(){
     if(Pushback != -1){
@@ -100,18 +86,6 @@ unsigned char ReadFast(){
     bufPos++;
     return buffer[bufPos-1];
 }
-/*
-unsigned long int ReadInt32(){
-    if(bufPos+4>=bufRange){
-        UpdateBuffer();
-    }
-    unsigned int test = 0;
-    for(int i = 0; i != 4; i++){
-        test = ((test<<8) | ReadFast());
-    }
-    return test;
-}
-*/
 unsigned char* ReadRange(int size){
     if(bufPos+size>=bufRange){
         UpdateBuffer();
