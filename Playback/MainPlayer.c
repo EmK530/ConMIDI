@@ -21,8 +21,8 @@ void StartPlayback(){
         }
         trackFinished2[i] = tempoCounts[i]==0;
     }
-    long long startTime = timeInMilliseconds();
-    long long startTime2 = timeInMilliseconds();
+    double startTime = getTimeMsec();
+    double startTime2 = getTimeMsec();
     cppq = ppq;
     Clock_Start();
     for(int i = 0; i < realTracks; i++){
@@ -35,7 +35,7 @@ void StartPlayback(){
     }
     int (*SendDirectData)(DWORD) = SendDirectDataPtr;
     while(TRUE){
-        long long tempT = timeInMilliseconds();
+        long long tempT = getTimeMsec();
         if((long)(tempT-startTime)>=16){
             if((long)(tempT-startTime2)>=1000){
                 printf("\nFPS: %.10g",(float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames));
