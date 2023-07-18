@@ -9,7 +9,6 @@ struct SynthEvent {
 };
 struct Tempo {
     float pos;
-    unsigned long int offset;
     unsigned long int event;
 };
 struct SynthEvent **SynthEvents;
