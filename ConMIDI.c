@@ -10,6 +10,7 @@ char version[] = "v1.1.1";
 char* title;
 int main(){
     printf("ConMIDI %s\n\n",version);
+    setupntdll();
     title = concat("ConMIDI ", version);
     prgTitle = title;
     SetConsoleTitle(prgTitle);
