@@ -77,11 +77,9 @@ void StartPlayback(){
                 if(*tF2==FALSE){
                     unsigned long int temp_teIDX = *teIDX;
                     unsigned long int temp_tC = *tC;
-                    unsigned long long temp_tO = *tO;
                     struct Tempo *curr2 = Tempos[i] + temp_teIDX;
-                    while(curr2->pos <= clockUInt64){
+                    while(curr2->pos <= clock){
                         Clock_SubmitBPM(curr2->pos,curr2->event);
-                        temp_tO+=curr2->offset;
                         temp_teIDX++;
                         if(temp_teIDX>=temp_tC){
                             //printf("\nKilled track %lu",i+1);
@@ -93,7 +91,6 @@ void StartPlayback(){
                     }
                     *teIDX=temp_teIDX;
                     *tC=temp_tC;
-                    *tO=temp_tO;
                 }
                 if(*tF1==FALSE){
                     unsigned long int temp_tIDX = *tIDX;
