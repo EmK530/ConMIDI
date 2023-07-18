@@ -37,6 +37,7 @@ char* concat(const char* str1, const char* str2) {
 }
 HMODULE ntdll_libHandle;
 char ntdllAvailable = 0;
+signed long long start = 0;
 typedef unsigned int(__stdcall *NtDE)(unsigned char, signed long long);
 typedef unsigned int(__stdcall *NtQST)(signed long long*);
 NtDE NtDelayExecution;
@@ -45,7 +46,7 @@ double getTimeMsec(void) {
     if(ntdllAvailable==1){
         signed long long ret;
         NtQuerySystemTime(&ret);
-        return (double)ret/10000;
+        return (double)(ret-start)/10000;
     } else {
         struct timeval tv;
         gettimeofday(&tv,NULL);
@@ -60,4 +61,5 @@ void setupntdll(){
     ntdllAvailable=1;
     if ((NtDelayExecution = (NtDE)GetProcAddress(ntdll_libHandle, "NtDelayExecution")) == NULL){printf("GetProcAddress failed for ntdll NtDelayExecution.\n\n");}
     if ((NtQuerySystemTime = (NtQST)GetProcAddress(ntdll_libHandle, "NtQuerySystemTime")) == NULL){printf("GetProcAddress failed for ntdll NtQuerySystemTime.\n\n");}
+    NtQuerySystemTime(&start);
 }
