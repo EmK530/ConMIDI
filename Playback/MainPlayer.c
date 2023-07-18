@@ -35,7 +35,7 @@ void StartPlayback(){
     }
     int (*SendDirectData)(DWORD) = SendDirectDataPtr;
     while(TRUE){
-        long long tempT = getTimeMsec();
+        double tempT = getTimeMsec();
         if((long)(tempT-startTime)>=16){
             if((long)(tempT-startTime2)>=1000){
                 printf("\nFPS: %.10g",(float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames));
