@@ -49,9 +49,11 @@ char ParseTrack(unsigned long int id, int thres){
     float trackTime = 0;
     unsigned long int idx = 0;
     unsigned long int idx2 = 0;
+    unsigned long int offset = 0;
     while((filePos+bufPos)-lastPos<lastSize){
-        unsigned long int offset = ReadVariableLen();
-        trackTime += offset;
+        unsigned long int temp = ReadVariableLen();
+        offset += temp;
+        trackTime += temp;
         byte readEvent = ReadFast();
         if(readEvent < 0x80){
             Pushback = readEvent;
@@ -72,6 +74,7 @@ char ParseTrack(unsigned long int id, int thres){
                             SynthEvents[id][idx]=eventToAdd;
                             idx++;
                             eventCounts[id]++;
+                            offset=0;
                         } else {
                             skippedNotes[ch][note]++;
                         }
@@ -81,6 +84,7 @@ char ParseTrack(unsigned long int id, int thres){
                             SynthEvents[id][idx]=eventToAdd;
                             idx++;
                             eventCounts[id]++;
+                            offset=0;
                         } else {
                             skippedNotes[ch][note]--;
                         }
@@ -97,6 +101,7 @@ char ParseTrack(unsigned long int id, int thres){
                         SynthEvents[id][idx]=eventToAdd;
                         idx++;
                         eventCounts[id]++;
+                        offset=0;
                     } else {
                         skippedNotes[ch][note]--;
                     }
@@ -110,6 +115,7 @@ char ParseTrack(unsigned long int id, int thres){
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
+                    offset=0;
                 }
                 break;
             case 0b11000000:
@@ -119,6 +125,7 @@ char ParseTrack(unsigned long int id, int thres){
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
+                    offset=0;
                 }
                 break;
             case 0b11010000:
@@ -128,6 +135,7 @@ char ParseTrack(unsigned long int id, int thres){
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
+                    offset=0;
                 }
                 break;
             case 0b11100000:
@@ -138,6 +146,7 @@ char ParseTrack(unsigned long int id, int thres){
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
+                    offset=0;
                 }
                 break;
             case 0b10110000:
@@ -148,6 +157,7 @@ char ParseTrack(unsigned long int id, int thres){
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
+                    offset=0;
                 }
                 break;
             case 0:
@@ -172,7 +182,7 @@ char ParseTrack(unsigned long int id, int thres){
                                 byte temp = Read();
                                 tempo = (tempo<<8)|temp;
                             }
-                            struct Tempo eventToAdd2 = { trackTime, offset, tempo };
+                            struct Tempo eventToAdd2 = { trackTime, tempo };
                             Tempos[id][idx2]=eventToAdd2;
                             idx2++;
                             tempoCounts[id]++;
