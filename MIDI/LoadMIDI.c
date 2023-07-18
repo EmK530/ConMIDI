@@ -43,14 +43,15 @@ char ParseTrack(unsigned long int id, int thres){
     lastSize = (ReadFast()*16777216)+(ReadFast()*65536)+(ReadFast()*256)+ReadFast();
     printf("\nTrack %hu / %hu | Size %lu",id+1,fakeTracks,lastSize);
     SynthEvents[id] = malloc(lastSize/3 * sizeof(struct SynthEvent));
-    Tempos[id] = malloc(lastSize/6 * sizeof(struct SynthEvent));
+    Tempos[id] = malloc(lastSize/6 * sizeof(struct Tempo));
     eventCounts[id] = 0;
     tempoCounts[id] = 0;
     float trackTime = 0;
     unsigned long int idx = 0;
     unsigned long int idx2 = 0;
     while((filePos+bufPos)-lastPos<lastSize){
-        trackTime += ReadVariableLen();
+        unsigned long int offset = ReadVariableLen();
+        trackTime += offset;
         byte readEvent = ReadFast();
         if(readEvent < 0x80){
             Pushback = readEvent;
@@ -67,7 +68,7 @@ char ParseTrack(unsigned long int id, int thres){
                     if(vel != 0){
                         if(vel>=thres){
                             notes++;
-                            struct SynthEvent eventToAdd = { trackTime, readEvent | (note << 8) | (vel << 16) };
+                            struct SynthEvent eventToAdd = { offset, readEvent | (note << 8) | (vel << 16) };
                             SynthEvents[id][idx]=eventToAdd;
                             idx++;
                             eventCounts[id]++;
@@ -76,7 +77,7 @@ char ParseTrack(unsigned long int id, int thres){
                         }
                     } else {
                         if(skippedNotes[ch][note]==0){
-                            struct SynthEvent eventToAdd = { trackTime, readEvent | (note << 8) | (vel << 16) };
+                            struct SynthEvent eventToAdd = { offset, readEvent | (note << 8) | (vel << 16) };
                             SynthEvents[id][idx]=eventToAdd;
                             idx++;
                             eventCounts[id]++;
@@ -92,7 +93,7 @@ char ParseTrack(unsigned long int id, int thres){
                     byte note = Read();
                     byte vel = ReadFast();
                     if(skippedNotes[ch][note]==0){
-                        struct SynthEvent eventToAdd = { trackTime, readEvent | (note << 8) | (vel << 16) };
+                        struct SynthEvent eventToAdd = { offset, readEvent | (note << 8) | (vel << 16) };
                         SynthEvents[id][idx]=eventToAdd;
                         idx++;
                         eventCounts[id]++;
@@ -105,7 +106,7 @@ char ParseTrack(unsigned long int id, int thres){
                 {
                     byte note = Read();
                     byte vel = Read();
-                    struct SynthEvent eventToAdd = { trackTime, readEvent | (note << 8) | (vel << 16) };
+                    struct SynthEvent eventToAdd = { offset, readEvent | (note << 8) | (vel << 16) };
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
@@ -114,7 +115,7 @@ char ParseTrack(unsigned long int id, int thres){
             case 0b11000000:
                 {
                     byte program = Read();
-                    struct SynthEvent eventToAdd = { trackTime, readEvent | (program << 8) };
+                    struct SynthEvent eventToAdd = { offset, readEvent | (program << 8) };
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
@@ -123,7 +124,7 @@ char ParseTrack(unsigned long int id, int thres){
             case 0b11010000:
                 {
                     byte pressure = Read();
-                    struct SynthEvent eventToAdd = { trackTime, readEvent | (pressure << 8) };
+                    struct SynthEvent eventToAdd = { offset, readEvent | (pressure << 8) };
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
@@ -133,7 +134,7 @@ char ParseTrack(unsigned long int id, int thres){
                 {
                     byte l = Read();
                     byte m = Read();
-                    struct SynthEvent eventToAdd = { trackTime, readEvent | (l << 8) | (m << 16) };
+                    struct SynthEvent eventToAdd = { offset, readEvent | (l << 8) | (m << 16) };
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
@@ -143,7 +144,7 @@ char ParseTrack(unsigned long int id, int thres){
                 {
                     byte cc = Read();
                     byte vv = Read();
-                    struct SynthEvent eventToAdd = { trackTime, readEvent | (cc << 8) | (vv << 16) };
+                    struct SynthEvent eventToAdd = { offset, readEvent | (cc << 8) | (vv << 16) };
                     SynthEvents[id][idx]=eventToAdd;
                     idx++;
                     eventCounts[id]++;
@@ -171,7 +172,7 @@ char ParseTrack(unsigned long int id, int thres){
                                 byte temp = Read();
                                 tempo = (tempo<<8)|temp;
                             }
-                            struct SynthEvent eventToAdd2 = { trackTime, tempo };
+                            struct Tempo eventToAdd2 = { trackTime, offset, tempo };
                             Tempos[id][idx2]=eventToAdd2;
                             idx2++;
                             tempoCounts[id]++;
