@@ -85,6 +85,3 @@ int Sound_Init(int id){
         return 0;
     }
 }
-void Sound_Submit(DWORD a){
-    (*SendDirectDataPtr)(a);
-}
