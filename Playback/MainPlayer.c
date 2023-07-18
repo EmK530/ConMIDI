@@ -5,8 +5,10 @@ void StartPlayback(){
     unsigned long totalFrames = 0;
     BOOL trackFinished[realTracks];
     BOOL trackFinished2[realTracks];
+    unsigned long long trackOffset[realTracks];
     unsigned long trackIDX[realTracks];
     unsigned long tempoIDX[realTracks];
+    memset(trackOffset,0,sizeof(trackOffset));
     memset(trackIDX,0,sizeof(trackIDX));
     memset(tempoIDX,0,sizeof(tempoIDX));
     unsigned int aliveTracks = realTracks;
@@ -55,15 +57,17 @@ void StartPlayback(){
             sprintf(num, "%llu", events);
             strcat(temp,num);
             strcat(temp," | BPM: ");
-            sprintf(fpstemp, "%.5g", bpm);
+            sprintf(fpstemp, "%.10g", bpm);
             strcat(temp,fpstemp);
             SetConsoleTitle(temp);
         }
         double newClock = Clock_GetTick();
-        totalFrames++;
         if(newClock!=clock){
+            totalFrames++;
             clock=newClock;
+            unsigned long long clockUInt64 = (unsigned long long)clock;
             unsigned long int *teIDX = &tempoIDX[0];
+            unsigned long long *tO = &trackOffset[0];
             unsigned long int *tIDX = &trackIDX[0];
             unsigned long int *eC = &eventCounts[0];
             unsigned long int *tC = &tempoCounts[0];
@@ -71,11 +75,13 @@ void StartPlayback(){
             BOOL *tF2 = &trackFinished2[0];
             for(int i = 0; i < realTracks; i++){
                 if(*tF2==FALSE){
-                    int temp_teIDX = *teIDX;
-                    int temp_tC = *tC;
-                    struct SynthEvent *curr2 = Tempos[i] + temp_teIDX;
-                    while(curr2->pos <= clock){
+                    unsigned long int temp_teIDX = *teIDX;
+                    unsigned long int temp_tC = *tC;
+                    unsigned long long temp_tO = *tO;
+                    struct Tempo *curr2 = Tempos[i] + temp_teIDX;
+                    while(curr2->pos <= clockUInt64){
                         Clock_SubmitBPM(curr2->pos,curr2->event);
+                        temp_tO+=curr2->offset;
                         temp_teIDX++;
                         if(temp_teIDX>=temp_tC){
                             //printf("\nKilled track %lu",i+1);
@@ -87,13 +93,16 @@ void StartPlayback(){
                     }
                     *teIDX=temp_teIDX;
                     *tC=temp_tC;
+                    *tO=temp_tO;
                 }
                 if(*tF1==FALSE){
-                    int temp_tIDX = *tIDX;
-                    int temp_eC = *eC;
+                    unsigned long int temp_tIDX = *tIDX;
+                    unsigned long int temp_eC = *eC;
+                    unsigned long long temp_tO = *tO;
                     struct SynthEvent *curr = SynthEvents[i] + temp_tIDX;
-                    while(curr->pos <= clock){        
+                    while(temp_tO+curr->pos <= clockUInt64){        
                         SendDirectData(curr->event);
+                        temp_tO+=curr->pos;
                         temp_tIDX++;
                         if(temp_tIDX>=temp_eC){
                             //printf("\nKilled track %lu",i+1);
@@ -106,9 +115,12 @@ void StartPlayback(){
                     }
                     *tIDX=temp_tIDX;
                     *eC=temp_eC;
+                    *tO=temp_tO;
                 }
-                *tIDX++;*teIDX++;*tF1++;*tF2++;*eC++;*tC++;
+                *tIDX++;*teIDX++;*tF1++;*tF2++;*eC++;*tC++;*tO++;
             }
+        } else {
+            usleep(1000);
         }
         if(aliveTracks == 0){
             printf("\nRan out of events, playback finished.");
