@@ -9,19 +9,19 @@ double ticklen = 0;
 double last = 0;
 BOOL throttle = TRUE;
 double timeLost = 0;
-long long startTime = 0;
+double startTime = 0;
 void Clock_Start(){
-    startTime = timeInMilliseconds();
+    startTime = getTimeMsec();
     ticklen = ((double)1 / (double)cppq) * ((double)60 / bpm);
 }
 void Clock_Reset(){
-    startTime = timeInMilliseconds();
+    startTime = getTimeMsec();
     timee = 0;
     last = 0;
     timeLost = 0;
 }
 double Clock_GetPassedTime(){
-    return (double)(timeInMilliseconds()-startTime)/1000;
+    return (double)(getTimeMsec()-startTime)/1000;
 }
 double Clock_GetElapsed(){
     double temp = ((double)Clock_GetPassedTime());
@@ -43,7 +43,7 @@ void Clock_SubmitBPM(double pos, unsigned long int b){
     timeLost = 0;
     ticklen = ((double)1 / (double)cppq) * ((double)60 / bpm);
     timee += remainder;
-    startTime = timeInMilliseconds();
+    startTime = getTimeMsec();
 }
 double Clock_GetTick(){
     return timee + (Clock_GetElapsed() / ticklen);
