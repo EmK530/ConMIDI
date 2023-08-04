@@ -7,6 +7,7 @@
 
 long long int lastPos = 0;
 unsigned long int lastSize = 0;
+double lastPrint = 0;
 
 int TextSearch(char text[]){
     unsigned char* str = ReadRange(strlen(text));
@@ -40,8 +41,12 @@ char ParseTrack(unsigned long int id, int thres){
         printf("\nTextSearch failed at %lu",filePos+bufPos);
         return 1;
     }
+    double t = getTimeMsec();
     lastSize = (ReadFast()*16777216)+(ReadFast()*65536)+(ReadFast()*256)+ReadFast();
-    printf("\nTrack %hu / %hu | Size %lu",id+1,fakeTracks,lastSize);
+    if(id+1==fakeTracks||t-lastPrint>250){
+        printf("\nTrack %hu / %hu | Size %lu",id+1,fakeTracks,lastSize);
+        lastPrint=t;
+    }
     SynthEvents[id] = malloc(lastSize/3 * sizeof(struct SynthEvent));
     Tempos[id] = malloc(lastSize/6 * sizeof(struct Tempo));
     eventCounts[id] = 0;
