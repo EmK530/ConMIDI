@@ -6,7 +6,7 @@
 #include "MIDI/LoadMIDI.c"
 
 FILE *file_ptr;
-char version[] = "v1.1.1";
+char version[] = "v1.1.1-rawstore";
 char* title;
 int main(){
     printf("ConMIDI %s\n\n",version);
@@ -38,7 +38,7 @@ int main(){
     char path[260];
     char fixedPath[260];
     while(TRUE){
-        printf("\n[Prompt 1 / 2] Select a MIDI\n");
+        printf("\nSelect a MIDI\n");
         OPENFILENAME ofn;
         ZeroMemory(&ofn, sizeof(ofn));
         ofn.lStructSize = sizeof(ofn);
@@ -50,7 +50,7 @@ int main(){
         if(!GetOpenFileName(&ofn)){
             printf("No file selected.");
             memset(path, 0, sizeof(path));
-            printf("\n[Prompt 1 / 2] Enter file path: ");
+            printf("\n[Prompt 1 / 1] Enter file path: ");
             scanf("%260[^\n]",path);
             fflush(stdin);
         }
@@ -62,20 +62,9 @@ int main(){
             memset(path, 0, sizeof(path));
         }
     }
-    //Threshold input
-    int threshold;
-    while(TRUE){
-        threshold = intInput("\n[Prompt 2 / 2] Enter note threshold (0-127): ");
-        //threshold = 0;
-        if(threshold>=0 && threshold<=127){
-            break;
-        } else {
-            printf("Invalid input\n");
-        }
-    }
     //Consider customizable buffer size
     unsigned int bufSize = 64;
     printf("\nLoading MIDI...");
-    LoadMIDI(fixedPath,threshold,bufSize);
+    LoadMIDI(fixedPath,bufSize);
     return 0;
 }
