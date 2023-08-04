@@ -53,31 +53,11 @@ void Skip(unsigned long int count){
         bufPos++;
     }
 }
-void ResetBuffer(){
-    fileEnded = FALSE;
-    bufPos = 0;
-    filePos = 0;
-    curSeek = 0;
-    fseeko(midi,0,SEEK_SET);
-    UpdateBuffer();
-}
 void ResizeBuffer(unsigned long int size){
     bufSize = size;
     free(buffer);
     buffer = malloc(size);
     UpdateBuffer();
-}
-unsigned char Read(){
-    if(Pushback != -1){
-        int temp = Pushback;
-        Pushback = -1;
-        return temp;
-    }
-    if(bufPos>=bufRange){
-        UpdateBuffer();
-    }
-    bufPos++;
-    return buffer[bufPos-1];
 }
 unsigned char ReadFast(){
     if(bufPos>=bufRange){
@@ -97,4 +77,14 @@ unsigned char* ReadRange(int size){
     range[size]='\0';
     bufPos+=size;
     return range;
+}
+void Copy(unsigned char *target, unsigned long int offset, unsigned long int size){
+    if(bufPos+size>=bufRange){
+        UpdateBuffer();
+    }
+    if(size==0){
+        size=bufSize;
+    }
+    memcpy(target+offset, buffer+bufPos, size);
+    bufPos+=size;
 }
