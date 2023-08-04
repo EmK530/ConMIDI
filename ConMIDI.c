@@ -50,7 +50,7 @@ int main(){
         if(!GetOpenFileName(&ofn)){
             printf("No file selected.");
             memset(path, 0, sizeof(path));
-            printf("\n[Prompt 1 / 1] Enter file path: ");
+            printf("\nEnter file path: ");
             scanf("%260[^\n]",path);
             fflush(stdin);
         }
