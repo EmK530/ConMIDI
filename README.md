@@ -1,33 +1,9 @@
-# ConMIDI
+# ConMIDI-rawstore
 
-ConMIDI is a lightweight console MIDI player, being the successor to [SharpMIDI v2.4.1](https://github.com/EmK530/SharpMIDI/releases/tag/v2.4.1).
+This branch modifies the code to load the MIDI tracks directly into memory and parse events during playback
 
-Written in C to achieve insane performance. Able to achieve around 100M NPS with OmniMIDI on my Ryzen 7 1700 at 3.75GHz
+This speeds up loading, lowers memory usage by double but slows down the playback performance.
 
-## Contributions
+## Warning
 
-I am a new C programmer, so there can very well be some bad practices used in this program. If you spot anything, feel free to report it!
-
-## Prerequisites
-
-Recommended use with this MIDI player for performance is the [OmniMIDI](https://github.com/KeppySoftware/OmniMIDI/releases) synth.
-
-XSynth is also supported, similar to SharpMIDI you can use a XSynth DLL named "XSynth.dll"
-
-If you have neither of these you can choose the "WinMM" device.
-
-## How to build
-
-Get yourself a copy of GCC and use this command:
-
-```
-gcc ConMIDI.c -Ofast -s -ffast-math -lcomdlg32 -o ConMIDI
-```
-
-## Credits
-
-#### Contributors:
-
-[Lurmog](https://github.com/Lurmog) (File dialog support)
-
-#### Zenith-MIDI's [MidiTrack.cs](https://github.com/arduano/Zenith-MIDI/blob/master/BMEngine/MidiTrack.cs) which the loading code is inspired by.
+This branch is semi-functional, playback works but there's a subtle parsing issue that could ruin some MIDIs. If you can figure this out I would be very grateful.
