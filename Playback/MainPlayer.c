@@ -13,25 +13,25 @@ BOOL* prepareStep;
 BOOL* tempoEvent;
 unsigned long long* trackPosition;
 
-unsigned char PRead(unsigned int trackId){
-    if(PPushback[trackId] != -1){
-        int temp = PPushback[trackId];
-        PPushback[trackId] = -1;
+unsigned char PRead(const unsigned char* track, unsigned long int* trackReadOffset, int* push){
+    if(*push != -1){
+        int temp = *push;
+        *push = -1;
         return temp;
     }
-    trackReadOffset[trackId]++;
-    return tracks[trackId][trackReadOffset[trackId]-1];
+    (*trackReadOffset)++;
+    return track[*trackReadOffset-1];
 }
-unsigned char PReadFast(unsigned int trackId){
-    trackReadOffset[trackId]++;
-    return tracks[trackId][trackReadOffset[trackId]-1];
+unsigned char PReadFast(const unsigned char* track, unsigned long int* trackReadOffset){
+    (*trackReadOffset)++;
+    return track[*trackReadOffset-1];
 }
 
-unsigned long int PReadVariableLen(unsigned int trackId){
+unsigned long int PReadVariableLen(const unsigned char* track, unsigned long int* trackReadOffset, int* push){
     byte temp;
     unsigned long int val = 0;
     for(int i = 0; i < 4; i++){
-        temp = PReadFast(trackId);
+        temp = PReadFast(track,trackReadOffset);
         if(temp > 0x7F){
             val = (val << 7) | (temp & 0x7F);
         } else {
@@ -66,19 +66,19 @@ void StartTimeCheck()
     }
 }
 byte prevEvent = 0;
-BOOL prepareEvent(unsigned int trackId){
-    if(prepareStep[trackId]==FALSE){
+BOOL prepareEvent(const unsigned char* track, BOOL* prepareStep, unsigned long long* currOffset, BOOL* tempoEvent, unsigned long int* trackReadOffset, unsigned long int* currEvent, int* push, unsigned int trackId){
+    if(*prepareStep==FALSE){
         return TRUE;
     }
-    prepareStep[trackId]=FALSE;
-    currOffset[trackId]=0;
-    tempoEvent[trackId]=FALSE;
+    *prepareStep=FALSE;
+    *currOffset=0;
+    *tempoEvent=FALSE;
     unsigned long int event = 0;
     while(TRUE){
-        currOffset[trackId]+=PReadVariableLen(trackId);
-        byte readEvent = PReadFast(trackId);
+        *currOffset+=PReadVariableLen(track,trackReadOffset,push);
+        byte readEvent = PReadFast(track,trackReadOffset);
         if(readEvent < 0x80){
-            PPushback[trackId] = readEvent;
+            *push = readEvent;
             readEvent = prevEvent;
         }
         prevEvent = readEvent;
@@ -86,11 +86,11 @@ BOOL prepareEvent(unsigned int trackId){
         byte trackEvent = readEvent & 0b11110000;
         if(readEvent>=128&&readEvent<=239){
             if(trackEvent==0b10010000||trackEvent==0b10000000){
-                event = (readEvent | (PRead(trackId) << 8) |(PReadFast(trackId) << 16));
+                event = (readEvent | (PRead(track,trackReadOffset,push) << 8) |(PReadFast(track,trackReadOffset) << 16));
             } else if(trackEvent==0b10100000||trackEvent==0b11100000||trackEvent==0b10110000){
-                event = (readEvent | (PRead(trackId) << 8) |(PRead(trackId) << 16));
+                event = (readEvent | (PRead(track,trackReadOffset,push) << 8) |(PRead(track,trackReadOffset,push) << 16));
             } else if(trackEvent==0b11000000||trackEvent==0b11010000){
-                event = (readEvent | (PRead(trackId) << 8));
+                event = (readEvent | (PRead(track,trackReadOffset,push) << 8));
             } else {
                 proceed = FALSE;
             }
@@ -99,28 +99,28 @@ BOOL prepareEvent(unsigned int trackId){
         } else {
             switch(readEvent){
                 case 0b11110000:
-                    while(PRead(trackId)!=0b11110111);
+                    while(PRead(track,trackReadOffset,push)!=0b11110111);
                     break;
                 case 0b11110010:
-                    trackReadOffset[trackId]+=2;
+                    *trackReadOffset+=2;
                     break;
                 case 0b11110011:
-                    trackReadOffset[trackId]+=1;
+                    *trackReadOffset+=1;
                     break;
                 case 0xFF:
-                    readEvent = PRead(trackId);
+                    readEvent = PRead(track,trackReadOffset,push);
                     if(readEvent == 81){
-                        trackReadOffset[trackId]+=1;
+                        *trackReadOffset+=1;
                         for (int i = 0; i != 3; i++){
-                            byte temp = PRead(trackId);
+                            byte temp = PRead(track,trackReadOffset,push);
                             event = (event<<8)|temp;
                         }
-                        tempoEvent[trackId]=TRUE;
+                        *tempoEvent=TRUE;
                     } else if(readEvent == 0x2F){
                         proceed = FALSE;
                         break;
                     } else {
-                        trackReadOffset[trackId]+=PRead(trackId);
+                        *trackReadOffset+=PRead(track,trackReadOffset,push);
                     }
                     break;
             }
@@ -128,7 +128,7 @@ BOOL prepareEvent(unsigned int trackId){
         if(proceed==FALSE){
             return FALSE;
         }
-        currEvent[trackId]=event;
+        *currEvent=event;
         return TRUE;
     }
 }
@@ -163,22 +163,31 @@ void StartPlayback(){
         if(newClock!=clock){
             totalFrames++;
             clock=newClock;
+            unsigned long long *tPos = &trackPosition[0];
+            unsigned long long *cOff = &currOffset[0];
+            unsigned long int *cEv = &currEvent[0];
+            unsigned long int *tRO = &trackReadOffset[0];
+            const unsigned char* currentTrack;
+            BOOL *pStep = &prepareStep[0];
+            int *pPushbacks = &PPushback[0];
+            BOOL *tEv = &tempoEvent[0];
             unsigned long long clockUInt64 = (unsigned long long)clock;
             BOOL *tF1 = &trackFinished[0];
-            for(int i = 0; i < realTracks; i++){
+            for(unsigned int i = 0; i < realTracks; i++){
                 if(*tF1==FALSE){
+                    currentTrack=tracks[i];
                     while(TRUE){
-                        if(prepareEvent(i)){
-                            if(trackPosition[i]+currOffset[i]<=clockUInt64){
-                                prepareStep[i]=TRUE;
-                                trackPosition[i]+=currOffset[i];
-                                switch(tempoEvent[i]){
+                        if(prepareEvent(currentTrack,pStep,cOff,tEv,tRO,cEv,pPushbacks,i)){
+                            if(*tPos+*cOff<=clockUInt64){
+                                *pStep=TRUE;
+                                *tPos+=*cOff;
+                                switch(*tEv){
                                     case FALSE:
-                                        SendDirectData(currEvent[i]);
+                                        SendDirectData(*cEv);
                                         sentEvents++;
                                         break;
                                     case TRUE:
-                                        Clock_SubmitBPM(trackPosition[i],currEvent[i]);
+                                        Clock_SubmitBPM(*tPos,*cEv);
                                         break;
                                 }
                             } else {
@@ -191,8 +200,10 @@ void StartPlayback(){
                         }
                     }
                 }
-                *tF1++;
+                *tF1++;*tPos++;*cOff++;*pStep++;*cEv++;*tEv++;*pPushbacks++;*tRO++;
             }
+        } else {
+            usleep(1000);
         }
         if(aliveTracks == 0){
             printf("\nRan out of events, playback finished.");
