@@ -85,11 +85,9 @@ BOOL prepareEvent(const unsigned char* track, BOOL* prepareStep, unsigned long l
         BOOL proceed = TRUE;
         byte trackEvent = readEvent & 0b11110000;
         if(readEvent>=128&&readEvent<=239){
-            if(trackEvent==0b10010000||trackEvent==0b10000000){
+            if(trackEvent==0x90||trackEvent==0x80||trackEvent==0xA0||trackEvent==0xE0||trackEvent == 0xB0){
                 event = (readEvent | (PRead(track,trackReadOffset) << 8) |(PReadFast(track,trackReadOffset) << 16));
-            } else if(trackEvent==0b10100000||trackEvent==0b11100000||trackEvent==0b10110000){
-                event = (readEvent | (PRead(track,trackReadOffset) << 8) |(PRead(track,trackReadOffset) << 16));
-            } else if(trackEvent==0b11000000||trackEvent==0b11010000){
+            } else if(trackEvent==0xC0||trackEvent==0xD0){
                 event = (readEvent | (PRead(track,trackReadOffset) << 8));
             } else {
                 proceed = FALSE;
