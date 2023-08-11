@@ -6,7 +6,7 @@
 #include "MIDI/LoadMIDI.c"
 
 FILE *file_ptr;
-char version[] = "v1.1.2-rawstore";
+char version[] = "v1.1.3-rawstore";
 char* title;
 int main(){
     printf("ConMIDI %s\n\n",version);
