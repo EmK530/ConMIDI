@@ -1,5 +1,27 @@
 #include "MIDIClock.c"
 
+char* AddCommas(char* num){
+    int len = strlen(num);
+    int commas = (len-1)/3;
+    int len2 = len+commas;
+    char *newnum = (char *)malloc(len2+1);
+    int j,k = 0;
+    for(int i=len-1; i>=0; i--){
+        newnum[j++] = num[i];
+        k++;
+        if(k%3==0&&i>0){
+            newnum[j++] = ',';
+        }
+    }
+    newnum[len2] = '\0';
+    for (int i = 0; i < len2 / 2; i++) {
+        char temp = newnum[i];
+        newnum[i] = newnum[len2-i-1];
+        newnum[len2-i-1] = temp;
+    }
+    return newnum;
+}
+
 void StartPlayback(){
     double clock = 0;
     unsigned long totalFrames = 0;
@@ -55,7 +77,9 @@ void StartPlayback(){
             strcat(temp,prgTitle);
             strcat(temp," | Played events: ");
             sprintf(num, "%llu", events);
-            strcat(temp,num);
+            char* num2 = AddCommas(num);
+            strcat(temp,num2);
+            free(num2);
             strcat(temp," | BPM: ");
             sprintf(fpstemp, "%.10g", bpm);
             strcat(temp,fpstemp);
