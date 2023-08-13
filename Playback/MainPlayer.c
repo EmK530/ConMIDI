@@ -136,50 +136,45 @@ void StartPlayback(){
                                 byte temp = PPushback;
                                 tempPrev = readEvent;
                                 byte trackEvent = readEvent & 0b11110000;
-                                if (readEvent >= 128 && readEvent <= 239) {
-                                    if (trackEvent == 0x90 || trackEvent == 0x80 || trackEvent == 0xA0 || trackEvent == 0xE0 || trackEvent == 0xB0) {
-                                        unsigned char PRead1;
-                                        if (PPushback != -1) {
-                                            PRead1 = PPushback;
-                                            PPushback = -1;
-                                        } else {
-                                            PRead1 = *(tR++);
-                                        }
-                                        byte tempByte = *(tR++);
-                                        if(tempPos+addOff<=clockUInt64){
-                                            SendDirectData((readEvent | (PRead1 << 8) | (tempByte << 16)));
-                                            sentEvents++;
-                                            tempPos+=addOff;
-                                            addOff=0;
-                                        } else {
-                                            *cEv = (readEvent | (PRead1 << 8) | (tempByte << 16));
-                                            doloop=FALSE;
-                                            tempstep=FALSE;
-                                            *tEv = FALSE;
-                                            break;
-                                        }
-                                    } else if (trackEvent == 0xC0 || trackEvent == 0xD0) {
-                                        unsigned char PRead1;
-                                        if (PPushback != -1) {
-                                            PRead1 = PPushback;
-                                            PPushback = -1;
-                                        } else {
-                                            PRead1 = *(tR++);
-                                        }
-                                        if(tempPos+addOff<=clockUInt64){
-                                            SendDirectData((readEvent | (PRead1 << 8)));
-                                            sentEvents++;
-                                            tempPos+=addOff;
-                                            addOff=0;
-                                        } else {
-                                            *cEv = (readEvent | (PRead1 << 8));
-                                            doloop=FALSE;
-                                            tempstep=FALSE;
-                                            *tEv = FALSE;
-                                            break;
-                                        }
+                                if (trackEvent == 0x90 || trackEvent == 0x80 || trackEvent == 0xA0 || trackEvent == 0xE0 || trackEvent == 0xB0) {
+                                    unsigned char PRead1;
+                                    if (PPushback != -1) {
+                                        PRead1 = PPushback;
+                                        PPushback = -1;
                                     } else {
+                                        PRead1 = *(tR++);
+                                    }
+                                    byte tempByte = *(tR++);
+                                    if(tempPos+addOff<=clockUInt64){
+                                        SendDirectData((readEvent | (PRead1 << 8) | (tempByte << 16)));
+                                        sentEvents++;
+                                        tempPos+=addOff;
+                                        addOff=0;
+                                    } else {
+                                        *cEv = (readEvent | (PRead1 << 8) | (tempByte << 16));
                                         doloop=FALSE;
+                                        tempstep=FALSE;
+                                        *tEv = FALSE;
+                                        break;
+                                    }
+                                } else if (trackEvent == 0xC0 || trackEvent == 0xD0) {
+                                    unsigned char PRead1;
+                                    if (PPushback != -1) {
+                                        PRead1 = PPushback;
+                                        PPushback = -1;
+                                    } else {
+                                        PRead1 = *(tR++);
+                                    }
+                                    if(tempPos+addOff<=clockUInt64){
+                                        SendDirectData((readEvent | (PRead1 << 8)));
+                                        sentEvents++;
+                                        tempPos+=addOff;
+                                        addOff=0;
+                                    } else {
+                                        *cEv = (readEvent | (PRead1 << 8));
+                                        doloop=FALSE;
+                                        tempstep=FALSE;
+                                        *tEv = FALSE;
                                         break;
                                     }
                                 } else if (readEvent == 0) {
@@ -215,7 +210,7 @@ void StartPlayback(){
                                                 PRead1 = *(tR++);
                                             }
                                             readEvent = PRead1;
-                                            if (readEvent == 81) {
+                                            if (readEvent == 0x51) {
                                                 tR++;
                                                 event = 0;
                                                 for (int i = 0; i != 3; i++) {
