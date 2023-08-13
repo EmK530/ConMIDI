@@ -236,6 +236,7 @@ void StartPlayback(){
                                             } else if (readEvent == 0x2F) {
                                                 doloop=FALSE;
                                                 *tF1=TRUE;
+                                                aliveTracks--;
                                                 break;
                                             } else {
                                                 tR += *(tR++);
