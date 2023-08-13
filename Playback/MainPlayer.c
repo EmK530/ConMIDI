@@ -9,6 +9,7 @@ int PPushback = -1;
 unsigned long long* currOffset;
 unsigned long int* currEvent;
 unsigned long int* trackReadOffset;
+unsigned char **trackReads;
 BOOL* prepareStep;
 BOOL* tempoEvent;
 byte* prevEvent;
@@ -64,115 +65,11 @@ void StartTimeCheck()
 
 unsigned long int *cEv;
 unsigned long int *tRO;
+unsigned char *tR;
 unsigned long long *cOff;
-const unsigned char* track;
 BOOL *pStep;
 BOOL *tEv;
 byte *prevE;
-BOOL prepareEvent() {
-    if (*pStep == FALSE) return TRUE;
-    *pStep = FALSE;
-    *cOff = 0;
-    *tEv = FALSE;
-    unsigned long int event = 0;
-    while(TRUE){
-        unsigned long int val = 0;
-        for (int i = 0; i < 4; i++) {
-            byte temp = track[(*tRO)++];
-            if (temp > 0x7F) {
-                val = (val << 7) | (temp & 0x7F);
-            } else {
-                val = val << 7 | temp;
-                break;
-            }
-        }
-        *cOff += val;
-        byte readEvent = track[(*tRO)++];
-        if (readEvent < 0x80) {
-            PPushback = readEvent;
-            readEvent = *prevE;
-        }
-        byte temp = PPushback;
-        *prevE = readEvent;
-        BOOL proceed = TRUE;
-        byte trackEvent = readEvent & 0b11110000;
-        if (readEvent >= 128 && readEvent <= 239) {
-            if (trackEvent == 0x90 || trackEvent == 0x80 || trackEvent == 0xA0 || trackEvent == 0xE0 || trackEvent == 0xB0) {
-                unsigned char PRead1;
-                if (PPushback != -1) {
-                    PRead1 = PPushback;
-                    PPushback = -1;
-                } else {
-                    PRead1 = track[(*tRO)++];
-                }
-                byte tempByte = track[(*tRO)++];
-                event = (readEvent | (PRead1 << 8) | (tempByte << 16));
-            } else if (trackEvent == 0xC0 || trackEvent == 0xD0) {
-                unsigned char PRead1;
-                if (PPushback != -1) {
-                    PRead1 = PPushback;
-                    PPushback = -1;
-                } else {
-                    PRead1 = track[(*tRO)++];
-                }
-                event = (readEvent | (PRead1 << 8));
-            } else {
-                return FALSE;
-            }
-        } else if (readEvent == 0) {
-            return FALSE;
-        } else {
-            switch (readEvent) {
-                case 0b11110000: {
-                    unsigned char PRead1;
-                    if (PPushback != -1) {
-                        PRead1 = PPushback;
-                        PPushback = -1;
-                    } else {
-                        PRead1 = track[(*tRO)++];
-                    }
-                    while (PRead1 != 0b11110111) {
-                        PRead1 = track[(*tRO)++];
-                    }
-                    break;
-                }
-                case 0b11110010:
-                    *tRO += 2;
-                    break;
-                case 0b11110011:
-                    *tRO += 1;
-                    break;
-                case 0xFF: {
-                    unsigned char PRead1;
-                    if (PPushback != -1) {
-                        PRead1 = PPushback;
-                        PPushback = -1;
-                    } else {
-                        PRead1 = track[(*tRO)++];
-                    }
-                    readEvent = PRead1;
-                    if (readEvent == 81) {
-                        *tRO += 1;
-                        for (int i = 0; i != 3; i++) {
-                            byte temp = track[(*tRO)++];
-                            event = (event << 8) | temp;
-                        }
-                        *tEv = TRUE;
-                    } else if (readEvent == 0x2F) {
-                        return FALSE;
-                    } else {
-                        *tRO += track[(*tRO)++];
-                    }
-                    break;
-                }
-            }
-        }
-        if(event){
-            *cEv = event;
-            return TRUE;
-        }
-    }
-}
 void StartPlayback(){
     double clock = 0;
     BOOL trackFinished[realTracks];
@@ -180,6 +77,10 @@ void StartPlayback(){
     currOffset = (unsigned long long*)calloc(realTracks, sizeof(unsigned long long));
     currEvent = (unsigned long int*)calloc(realTracks, sizeof(unsigned long int));
     trackReadOffset = (unsigned long int*)calloc(realTracks, sizeof(unsigned long int));
+    trackReads = (unsigned char **)malloc(realTracks * sizeof(unsigned char *));
+    for(int i = 0; i < realTracks; i++){
+        trackReads[i] = &tracks[i][0];
+    }
     trackPosition = (unsigned long long*)calloc(realTracks, sizeof(unsigned long long));
     prevEvent = (byte*)calloc(realTracks, sizeof(byte));
     prepareStep = (BOOL*)calloc(realTracks, sizeof(BOOL));
@@ -199,7 +100,6 @@ void StartPlayback(){
             unsigned long long *tPos = &trackPosition[0];
             cOff = &currOffset[0];
             cEv = &currEvent[0];
-            tRO = &trackReadOffset[0];
             pStep = &prepareStep[0];
             tEv = &tempoEvent[0];
             prevE = &prevEvent[0];
@@ -207,32 +107,171 @@ void StartPlayback(){
             BOOL *tF1 = &trackFinished[0];
             for(unsigned int i = 0; i < realTracks; i++){
                 if(*tF1==FALSE){
-                    track=tracks[i];
+                    tR = trackReads[i];
+                    unsigned long long tempPos = *tPos;
+                    BOOL doloop = TRUE;
+                    BOOL tempstep = *pStep;
                     while(TRUE){
-                        if(prepareEvent()){
-                            if(*tPos+*cOff<=clockUInt64){
-                                *pStep=TRUE;
-                                *tPos+=*cOff;
-                                switch(*tEv){
-                                    case FALSE:
-                                        SendDirectData(*cEv);
-                                        sentEvents++;
+                        if(tempstep){
+                            unsigned long int addOff = 0;
+                            unsigned long int event = 0;
+                            byte tempPrev = *prevE;
+                            while(doloop){
+                                unsigned long int val = 0;
+                                for (int i = 0; i < 4; i++) {
+                                    byte temp = *(tR++);
+                                    if (temp > 0x7F) {
+                                        val = (val << 7) | (temp & 0x7F);
+                                    } else {
+                                        val = val << 7 | temp;
                                         break;
-                                    case TRUE:
-                                        Clock_SubmitBPM(*tPos,*cEv);
+                                    }
+                                }
+                                addOff+=val;
+                                byte readEvent = *(tR++);
+                                if (readEvent < 0x80) {
+                                    PPushback = readEvent;
+                                    readEvent = tempPrev;
+                                }
+                                byte temp = PPushback;
+                                tempPrev = readEvent;
+                                byte trackEvent = readEvent & 0b11110000;
+                                if (readEvent >= 128 && readEvent <= 239) {
+                                    if (trackEvent == 0x90 || trackEvent == 0x80 || trackEvent == 0xA0 || trackEvent == 0xE0 || trackEvent == 0xB0) {
+                                        unsigned char PRead1;
+                                        if (PPushback != -1) {
+                                            PRead1 = PPushback;
+                                            PPushback = -1;
+                                        } else {
+                                            PRead1 = *(tR++);
+                                        }
+                                        byte tempByte = *(tR++);
+                                        if(tempPos+addOff<=clockUInt64){
+                                            SendDirectData((readEvent | (PRead1 << 8) | (tempByte << 16)));
+                                            sentEvents++;
+                                            tempPos+=addOff;
+                                            addOff=0;
+                                        } else {
+                                            *cEv = (readEvent | (PRead1 << 8) | (tempByte << 16));
+                                            doloop=FALSE;
+                                            tempstep=FALSE;
+                                            *tEv = FALSE;
+                                            break;
+                                        }
+                                    } else if (trackEvent == 0xC0 || trackEvent == 0xD0) {
+                                        unsigned char PRead1;
+                                        if (PPushback != -1) {
+                                            PRead1 = PPushback;
+                                            PPushback = -1;
+                                        } else {
+                                            PRead1 = *(tR++);
+                                        }
+                                        if(tempPos+addOff<=clockUInt64){
+                                            SendDirectData((readEvent | (PRead1 << 8)));
+                                            sentEvents++;
+                                            tempPos+=addOff;
+                                            addOff=0;
+                                        } else {
+                                            *cEv = (readEvent | (PRead1 << 8));
+                                            doloop=FALSE;
+                                            tempstep=FALSE;
+                                            *tEv = FALSE;
+                                            break;
+                                        }
+                                    } else {
+                                        doloop=FALSE;
                                         break;
+                                    }
+                                } else if (readEvent == 0) {
+                                    doloop=FALSE;
+                                    break;
+                                } else {
+                                    switch (readEvent) {
+                                        case 0b11110000: {
+                                            unsigned char PRead1;
+                                            if (PPushback != -1) {
+                                                PRead1 = PPushback;
+                                                PPushback = -1;
+                                            } else {
+                                                PRead1 = *(tR++);
+                                            }
+                                            while (PRead1 != 0b11110111) {
+                                                PRead1 = *(tR++);
+                                            }
+                                            break;
+                                        }
+                                        case 0b11110010:
+                                            tR += 2;
+                                            break;
+                                        case 0b11110011:
+                                            tR++;
+                                            break;
+                                        case 0xFF: {
+                                            unsigned char PRead1;
+                                            if (PPushback != -1) {
+                                                PRead1 = PPushback;
+                                                PPushback = -1;
+                                            } else {
+                                                PRead1 = *(tR++);
+                                            }
+                                            readEvent = PRead1;
+                                            if (readEvent == 81) {
+                                                tR++;
+                                                event = 0;
+                                                for (int i = 0; i != 3; i++) {
+                                                    byte temp = *(tR++);
+                                                    event = (event << 8) | temp;
+                                                }
+                                                if(tempPos+addOff<=clockUInt64){
+                                                    tempPos+=addOff;
+                                                    Clock_SubmitBPM(tempPos,event);
+                                                    addOff=0;
+                                                } else {
+                                                    *cEv = event;
+                                                    doloop=FALSE;
+                                                    tempstep=FALSE;
+                                                    *tEv = TRUE;
+                                                    break;
+                                                }
+                                            } else if (readEvent == 0x2F) {
+                                                doloop=FALSE;
+                                                *tF1=TRUE;
+                                                break;
+                                            } else {
+                                                tR += *(tR++);
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            *cOff=addOff;
+                            *tPos=tempPos;
+                            *prevE=tempPrev;
+                            if(!doloop){
+                                break;
+                            }
+                        } else {
+                            unsigned long int tempOff = *cOff;
+                            if(tempPos+tempOff<=clockUInt64){
+                                tempstep=TRUE;
+                                tempPos+=tempOff;
+                                if(*tEv==FALSE){
+                                    SendDirectData(*cEv);
+                                    sentEvents++;
+                                } else {
+                                    Clock_SubmitBPM(tempPos,*cEv);
                                 }
                             } else {
                                 break;
                             }
-                        } else {
-                            aliveTracks--;
-                            *tF1 = TRUE;
-                            break;
                         }
                     }
+                    *pStep=tempstep;
+                    *tPos=tempPos;
+                    trackReads[i] = tR;
                 }
-                *tF1++;*tPos++;*cOff++;*pStep++;*cEv++;*tEv++;*tRO++;*prevE++;
+                *tF1++;*tPos++;*cOff++;*pStep++;*cEv++;*prevE++;*tEv++;
             }
         } else {
             usleep(1000);
