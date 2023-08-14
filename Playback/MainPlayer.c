@@ -5,7 +5,6 @@ unsigned long totalFrames = 0;
 double startTime1 = 0;
 double startTime2 = 0;
 
-int PPushback = -1;
 unsigned long long* currOffset;
 unsigned long int* currEvent;
 unsigned long int* trackReadOffset;
@@ -130,48 +129,32 @@ void StartPlayback(){
                                 addOff+=val;
                                 byte readEvent = *(tR++);
                                 if (readEvent < 0x80) {
-                                    PPushback = readEvent;
+                                    tR--;
                                     readEvent = tempPrev;
                                 }
-                                byte temp = PPushback;
                                 tempPrev = readEvent;
                                 byte trackEvent = readEvent & 0b11110000;
                                 if (trackEvent == 0x90 || trackEvent == 0x80 || trackEvent == 0xA0 || trackEvent == 0xE0 || trackEvent == 0xB0) {
-                                    unsigned char PRead1;
-                                    if (PPushback != -1) {
-                                        PRead1 = PPushback;
-                                        PPushback = -1;
-                                    } else {
-                                        PRead1 = *(tR++);
-                                    }
-                                    byte tempByte = *(tR++);
                                     if(tempPos+addOff<=clockUInt64){
-                                        SendDirectData((readEvent | (PRead1 << 8) | (tempByte << 16)));
+                                        SendDirectData((readEvent | (*(tR++) << 8) | (*(tR++) << 16)));
                                         sentEvents++;
                                         tempPos+=addOff;
                                         addOff=0;
                                     } else {
-                                        *cEv = (readEvent | (PRead1 << 8) | (tempByte << 16));
+                                        *cEv = (readEvent | (*(tR++) << 8) | (*(tR++) << 16));
                                         doloop=FALSE;
                                         tempstep=FALSE;
                                         *tEv = FALSE;
                                         break;
                                     }
                                 } else if (trackEvent == 0xC0 || trackEvent == 0xD0) {
-                                    unsigned char PRead1;
-                                    if (PPushback != -1) {
-                                        PRead1 = PPushback;
-                                        PPushback = -1;
-                                    } else {
-                                        PRead1 = *(tR++);
-                                    }
                                     if(tempPos+addOff<=clockUInt64){
-                                        SendDirectData((readEvent | (PRead1 << 8)));
+                                        SendDirectData((readEvent | (*(tR++) << 8)));
                                         sentEvents++;
                                         tempPos+=addOff;
                                         addOff=0;
                                     } else {
-                                        *cEv = (readEvent | (PRead1 << 8));
+                                        *cEv = (readEvent | (*(tR++) << 8));
                                         doloop=FALSE;
                                         tempstep=FALSE;
                                         *tEv = FALSE;
@@ -183,16 +166,7 @@ void StartPlayback(){
                                 } else {
                                     switch (readEvent) {
                                         case 0b11110000: {
-                                            unsigned char PRead1;
-                                            if (PPushback != -1) {
-                                                PRead1 = PPushback;
-                                                PPushback = -1;
-                                            } else {
-                                                PRead1 = *(tR++);
-                                            }
-                                            while (PRead1 != 0b11110111) {
-                                                PRead1 = *(tR++);
-                                            }
+                                            while (*(tR++) != 0b11110111);
                                             break;
                                         }
                                         case 0b11110010:
@@ -202,14 +176,7 @@ void StartPlayback(){
                                             tR++;
                                             break;
                                         case 0xFF: {
-                                            unsigned char PRead1;
-                                            if (PPushback != -1) {
-                                                PRead1 = PPushback;
-                                                PPushback = -1;
-                                            } else {
-                                                PRead1 = *(tR++);
-                                            }
-                                            readEvent = PRead1;
+                                            readEvent = *(tR++);
                                             if (readEvent == 0x51) {
                                                 tR++;
                                                 event = 0;
