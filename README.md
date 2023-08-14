@@ -21,7 +21,7 @@ If you have neither of these you can choose the "WinMM" device.
 Get yourself a copy of GCC and use this command:
 
 ```
-gcc ConMIDI.c -Ofast -s -ffast-math -lcomdlg32 -o ConMIDI
+gcc ConMIDI.c -O3 -march=native -mtune=native -s -lcomdlg32 -o ConMIDI
 ```
 
 ## Credits
