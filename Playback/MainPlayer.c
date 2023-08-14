@@ -1,5 +1,19 @@
 #include "MIDIClock.c"
 
+unsigned long long sentEvents = 0;
+unsigned long totalFrames = 0;
+double startTime1 = 0;
+double startTime2 = 0;
+
+unsigned long long* currOffset;
+unsigned long int* currEvent;
+unsigned long int* trackReadOffset;
+unsigned char **trackReads;
+BOOL* prepareStep;
+BOOL* tempoEvent;
+byte* prevEvent;
+unsigned long long* trackPosition;
+
 char* AddCommas(char* num){
     int len = strlen(num);
     int commas = (len-1)/3;
@@ -22,123 +36,205 @@ char* AddCommas(char* num){
     return newnum;
 }
 
+void StartTimeCheck()
+{
+    double tempT = getTimeMsec();
+    if((long)(tempT-startTime1)>=16){
+        if((long)(tempT-startTime2)>=1000){
+            printf("\nFPS: %.10g",(float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames));
+            totalFrames = 0;
+            startTime2 = tempT;
+        }
+        startTime1 = tempT;
+        char temp[256] = "";
+        char num[20];
+        char fpstemp[32];
+        strcat(temp,prgTitle);
+        strcat(temp," | Played events: ");
+        sprintf(num, "%llu", sentEvents);
+        char* num2 = AddCommas(num);
+        strcat(temp,num2);
+        free(num2);
+        strcat(temp," | BPM: ");
+        sprintf(fpstemp, "%.10g", bpm);
+        strcat(temp,fpstemp);
+        SetConsoleTitle(temp);
+    }
+}
+
+unsigned long int *cEv;
+unsigned long int *tRO;
+unsigned char *tR;
+unsigned long long *cOff;
+BOOL *pStep;
+BOOL *tEv;
+byte *prevE;
 void StartPlayback(){
     double clock = 0;
-    unsigned long totalFrames = 0;
     BOOL trackFinished[realTracks];
-    BOOL trackFinished2[realTracks];
-    unsigned long long trackOffset[realTracks];
-    unsigned long trackIDX[realTracks];
-    unsigned long tempoIDX[realTracks];
-    memset(trackOffset,0,sizeof(trackOffset));
-    memset(trackIDX,0,sizeof(trackIDX));
-    memset(tempoIDX,0,sizeof(tempoIDX));
     unsigned int aliveTracks = realTracks;
+    currOffset = (unsigned long long*)calloc(realTracks, sizeof(unsigned long long));
+    currEvent = (unsigned long int*)calloc(realTracks, sizeof(unsigned long int));
+    trackReadOffset = (unsigned long int*)calloc(realTracks, sizeof(unsigned long int));
+    trackReads = (unsigned char **)malloc(realTracks * sizeof(unsigned char *));
     for(int i = 0; i < realTracks; i++){
-        if(eventCounts[i]==0){
-            trackFinished[i] = TRUE;
-            aliveTracks--;
-        } else {
-            trackFinished[i] = FALSE;
-        }
-        trackFinished2[i] = tempoCounts[i]==0;
+        trackReads[i] = &tracks[i][0];
     }
-    double startTime = getTimeMsec();
-    double startTime2 = getTimeMsec();
+    trackPosition = (unsigned long long*)calloc(realTracks, sizeof(unsigned long long));
+    prevEvent = (byte*)calloc(realTracks, sizeof(byte));
+    prepareStep = (BOOL*)calloc(realTracks, sizeof(BOOL));
+    tempoEvent = (BOOL*)calloc(realTracks, sizeof(BOOL));
+    memset(trackFinished, FALSE, sizeof(trackFinished));
+    startTime1 = getTimeMsec();
+    startTime2 = getTimeMsec();
     cppq = ppq;
     Clock_Start();
-    for(int i = 0; i < realTracks; i++){
-        trackIDX[i] = 0;
-        if(eventCounts[i]==0){
-            trackFinished[i] = TRUE;
-        } else {
-            trackFinished[i] = FALSE;
-        }
-    }
     int (*SendDirectData)(DWORD) = SendDirectDataPtr;
     while(TRUE){
-        double tempT = getTimeMsec();
-        if((long)(tempT-startTime)>=16){
-            if((long)(tempT-startTime2)>=1000){
-                printf("\nFPS: %.10g",(float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames));
-                totalFrames = 0;
-                startTime2 = tempT;
-            }
-            startTime = tempT;
-            unsigned long long events = 0;
-            unsigned long int *tIDX = &trackIDX[0];
-            for(int i = 0; i < realTracks; i++){
-                events+=*tIDX;
-                *tIDX++;
-            }
-            char temp[256] = "";
-            char num[20];
-            char fpstemp[32];
-            strcat(temp,prgTitle);
-            strcat(temp," | Played events: ");
-            sprintf(num, "%llu", events);
-            char* num2 = AddCommas(num);
-            strcat(temp,num2);
-            free(num2);
-            strcat(temp," | BPM: ");
-            sprintf(fpstemp, "%.10g", bpm);
-            strcat(temp,fpstemp);
-            SetConsoleTitle(temp);
-        }
+        StartTimeCheck();
         double newClock = Clock_GetTick();
         if(newClock!=clock){
             totalFrames++;
             clock=newClock;
+            unsigned long long *tPos = &trackPosition[0];
+            cOff = &currOffset[0];
+            cEv = &currEvent[0];
+            pStep = &prepareStep[0];
+            tEv = &tempoEvent[0];
+            prevE = &prevEvent[0];
             unsigned long long clockUInt64 = (unsigned long long)clock;
-            unsigned long int *teIDX = &tempoIDX[0];
-            unsigned long long *tO = &trackOffset[0];
-            unsigned long int *tIDX = &trackIDX[0];
-            unsigned long int *eC = &eventCounts[0];
-            unsigned long int *tC = &tempoCounts[0];
             BOOL *tF1 = &trackFinished[0];
-            BOOL *tF2 = &trackFinished2[0];
-            for(int i = 0; i < realTracks; i++){
-                if(*tF2==FALSE){
-                    unsigned long int temp_teIDX = *teIDX;
-                    unsigned long int temp_tC = *tC;
-                    struct Tempo *curr2 = Tempos[i] + temp_teIDX;
-                    while(curr2->pos <= clock){
-                        Clock_SubmitBPM(curr2->pos,curr2->event);
-                        temp_teIDX++;
-                        if(temp_teIDX>=temp_tC){
-                            //printf("\nKilled track %lu",i+1);
-                            *tF2 = TRUE;
-                            break;
-                        } else {
-                            curr2++;
-                        }
-                    }
-                    *teIDX=temp_teIDX;
-                    *tC=temp_tC;
-                }
+            for(unsigned int i = 0; i < realTracks; i++){
                 if(*tF1==FALSE){
-                    unsigned long int temp_tIDX = *tIDX;
-                    unsigned long int temp_eC = *eC;
-                    unsigned long long temp_tO = *tO;
-                    struct SynthEvent *curr = SynthEvents[i] + temp_tIDX;
-                    while(temp_tO+curr->pos <= clockUInt64){        
-                        SendDirectData(curr->event);
-                        temp_tO+=curr->pos;
-                        temp_tIDX++;
-                        if(temp_tIDX>=temp_eC){
-                            //printf("\nKilled track %lu",i+1);
-                            aliveTracks--;
-                            *tF1 = TRUE;
-                            break;
+                    tR = trackReads[i];
+                    unsigned long long tempPos = *tPos;
+                    BOOL doloop = TRUE;
+                    BOOL tempstep = *pStep;
+                    while(TRUE){
+                        if(tempstep){
+                            unsigned long int addOff = 0;
+                            unsigned long int event = 0;
+                            byte tempPrev = *prevE;
+                            while(doloop){
+                                unsigned long int val = 0;
+                                for (int i = 0; i < 4; i++) {
+                                    byte temp = *(tR++);
+                                    if (temp > 0x7F) {
+                                        val = (val << 7) | (temp & 0x7F);
+                                    } else {
+                                        val = val << 7 | temp;
+                                        break;
+                                    }
+                                }
+                                addOff+=val;
+                                byte readEvent = *(tR++);
+                                if (readEvent < 0x80) {
+                                    tR--;
+                                    readEvent = tempPrev;
+                                }
+                                tempPrev = readEvent;
+                                byte trackEvent = readEvent & 0b11110000;
+                                if (trackEvent == 0x90 || trackEvent == 0x80 || trackEvent == 0xA0 || trackEvent == 0xE0 || trackEvent == 0xB0) {
+                                    if(tempPos+addOff<=clockUInt64){
+                                        SendDirectData((readEvent | (*(tR++) << 8) | (*(tR++) << 16)));
+                                        sentEvents++;
+                                        tempPos+=addOff;
+                                        addOff=0;
+                                    } else {
+                                        *cEv = (readEvent | (*(tR++) << 8) | (*(tR++) << 16));
+                                        doloop=FALSE;
+                                        tempstep=FALSE;
+                                        *tEv = FALSE;
+                                        break;
+                                    }
+                                } else if (trackEvent == 0xC0 || trackEvent == 0xD0) {
+                                    if(tempPos+addOff<=clockUInt64){
+                                        SendDirectData((readEvent | (*(tR++) << 8)));
+                                        sentEvents++;
+                                        tempPos+=addOff;
+                                        addOff=0;
+                                    } else {
+                                        *cEv = (readEvent | (*(tR++) << 8));
+                                        doloop=FALSE;
+                                        tempstep=FALSE;
+                                        *tEv = FALSE;
+                                        break;
+                                    }
+                                } else if (readEvent == 0) {
+                                    doloop=FALSE;
+                                    break;
+                                } else {
+                                    switch (readEvent) {
+                                        case 0b11110000: {
+                                            while (*(tR++) != 0b11110111);
+                                            break;
+                                        }
+                                        case 0b11110010:
+                                            tR += 2;
+                                            break;
+                                        case 0b11110011:
+                                            tR++;
+                                            break;
+                                        case 0xFF: {
+                                            readEvent = *(tR++);
+                                            if (readEvent == 0x51) {
+                                                tR++;
+                                                event = 0;
+                                                for (int i = 0; i != 3; i++) {
+                                                    byte temp = *(tR++);
+                                                    event = (event << 8) | temp;
+                                                }
+                                                if(tempPos+addOff<=clockUInt64){
+                                                    tempPos+=addOff;
+                                                    Clock_SubmitBPM(tempPos,event);
+                                                    addOff=0;
+                                                } else {
+                                                    *cEv = event;
+                                                    doloop=FALSE;
+                                                    tempstep=FALSE;
+                                                    *tEv = TRUE;
+                                                    break;
+                                                }
+                                            } else if (readEvent == 0x2F) {
+                                                doloop=FALSE;
+                                                *tF1=TRUE;
+                                                aliveTracks--;
+                                                break;
+                                            } else {
+                                                tR += *(tR++);
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            *cOff=addOff;
+                            *tPos=tempPos;
+                            *prevE=tempPrev;
+                            if(!doloop){
+                                break;
+                            }
                         } else {
-                            curr++;
+                            unsigned long int tempOff = *cOff;
+                            if(tempPos+tempOff<=clockUInt64){
+                                tempstep=TRUE;
+                                tempPos+=tempOff;
+                                if(*tEv==FALSE){
+                                    SendDirectData(*cEv);
+                                    sentEvents++;
+                                } else {
+                                    Clock_SubmitBPM(tempPos,*cEv);
+                                }
+                            } else {
+                                break;
+                            }
                         }
                     }
-                    *tIDX=temp_tIDX;
-                    *eC=temp_eC;
-                    *tO=temp_tO;
+                    *pStep=tempstep;
+                    *tPos=tempPos;
+                    trackReads[i] = tR;
                 }
-                *tIDX++;*teIDX++;*tF1++;*tF2++;*eC++;*tC++;*tO++;
+                *tF1++;*tPos++;*cOff++;*pStep++;*cEv++;*prevE++;*tEv++;
             }
         } else {
             usleep(1000);
