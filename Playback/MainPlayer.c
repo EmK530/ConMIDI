@@ -5,7 +5,6 @@ unsigned long totalFrames = 0;
 double startTime1 = 0;
 double startTime2 = 0;
 
-unsigned long long* currOffset;
 unsigned long int* currEvent;
 unsigned long int* trackReadOffset;
 unsigned char **trackReads;
@@ -65,7 +64,6 @@ void StartTimeCheck()
 unsigned long int *cEv;
 unsigned long int *tRO;
 unsigned char *tR;
-unsigned long long *cOff;
 BOOL *pStep;
 BOOL *tEv;
 byte *prevE;
@@ -73,7 +71,6 @@ void StartPlayback(){
     double clock = 0;
     BOOL trackFinished[realTracks];
     unsigned int aliveTracks = realTracks;
-    currOffset = (unsigned long long*)calloc(realTracks, sizeof(unsigned long long));
     currEvent = (unsigned long int*)calloc(realTracks, sizeof(unsigned long int));
     trackReadOffset = (unsigned long int*)calloc(realTracks, sizeof(unsigned long int));
     trackReads = (unsigned char **)malloc(realTracks * sizeof(unsigned char *));
@@ -97,7 +94,6 @@ void StartPlayback(){
             totalFrames++;
             clock=newClock;
             unsigned long long *tPos = &trackPosition[0];
-            cOff = &currOffset[0];
             cEv = &currEvent[0];
             pStep = &prepareStep[0];
             tEv = &tempoEvent[0];
@@ -112,21 +108,17 @@ void StartPlayback(){
                     BOOL tempstep = *pStep;
                     while(TRUE){
                         if(tempstep){
-                            unsigned long int addOff = 0;
                             unsigned long int event = 0;
                             byte tempPrev = *prevE;
                             while(doloop){
                                 unsigned long int val = 0;
-                                for (int i = 0; i < 4; i++) {
-                                    byte temp = *(tR++);
-                                    if (temp > 0x7F) {
-                                        val = (val << 7) | (temp & 0x7F);
-                                    } else {
-                                        val = val << 7 | temp;
-                                        break;
-                                    }
-                                }
-                                addOff+=val;
+                                byte temp = 0;
+                                do
+                                {
+                                    temp = *(tR++);
+                                    val = (val << 7) | (temp & 0x7F);
+                                } while (temp & 0x80);
+                                tempPos+=val;
                                 byte readEvent = *(tR++);
                                 if (readEvent < 0x80) {
                                     tR--;
@@ -135,11 +127,9 @@ void StartPlayback(){
                                 tempPrev = readEvent;
                                 byte trackEvent = readEvent & 0b11110000;
                                 if (trackEvent == 0x90 || trackEvent == 0x80 || trackEvent == 0xA0 || trackEvent == 0xE0 || trackEvent == 0xB0) {
-                                    if(tempPos+addOff<=clockUInt64){
+                                    if(tempPos<=clockUInt64){
                                         SendDirectData((readEvent | (*(tR++) << 8) | (*(tR++) << 16)));
                                         sentEvents++;
-                                        tempPos+=addOff;
-                                        addOff=0;
                                     } else {
                                         *cEv = (readEvent | (*(tR++) << 8) | (*(tR++) << 16));
                                         doloop=FALSE;
@@ -148,11 +138,9 @@ void StartPlayback(){
                                         break;
                                     }
                                 } else if (trackEvent == 0xC0 || trackEvent == 0xD0) {
-                                    if(tempPos+addOff<=clockUInt64){
+                                    if(tempPos<=clockUInt64){
                                         SendDirectData((readEvent | (*(tR++) << 8)));
                                         sentEvents++;
-                                        tempPos+=addOff;
-                                        addOff=0;
                                     } else {
                                         *cEv = (readEvent | (*(tR++) << 8));
                                         doloop=FALSE;
@@ -184,10 +172,8 @@ void StartPlayback(){
                                                     byte temp = *(tR++);
                                                     event = (event << 8) | temp;
                                                 }
-                                                if(tempPos+addOff<=clockUInt64){
-                                                    tempPos+=addOff;
+                                                if(tempPos<=clockUInt64){
                                                     Clock_SubmitBPM(tempPos,event);
-                                                    addOff=0;
                                                 } else {
                                                     *cEv = event;
                                                     doloop=FALSE;
@@ -208,17 +194,14 @@ void StartPlayback(){
                                     }
                                 }
                             }
-                            *cOff=addOff;
                             *tPos=tempPos;
                             *prevE=tempPrev;
                             if(!doloop){
                                 break;
                             }
                         } else {
-                            unsigned long int tempOff = *cOff;
-                            if(tempPos+tempOff<=clockUInt64){
+                            if(tempPos<=clockUInt64){
                                 tempstep=TRUE;
-                                tempPos+=tempOff;
                                 if(*tEv==FALSE){
                                     SendDirectData(*cEv);
                                     sentEvents++;
@@ -234,7 +217,7 @@ void StartPlayback(){
                     *tPos=tempPos;
                     trackReads[i] = tR;
                 }
-                *tF1++;*tPos++;*cOff++;*pStep++;*cEv++;*prevE++;*tEv++;
+                *tF1++;*tPos++;*pStep++;*cEv++;*prevE++;*tEv++;
             }
         } else {
             usleep(1000);
