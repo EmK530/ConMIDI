@@ -5,7 +5,7 @@ HMODULE WinMM_libHandle;
 typedef int(__stdcall *WM_1)();
 typedef int(__stdcall *WM_2)(UINT_PTR, LPMIDIOUTCAPSW, UINT);
 typedef int(__stdcall *WM_3)(LPHMIDIOUT,UINT,DWORD_PTR,DWORD_PTR,DWORD);
-typedef void(__stdcall *WM_4)(HMIDIOUT,unsigned long int);
+typedef int(__stdcall *WM_4)(HMIDIOUT,unsigned long int);
 WM_1 WinMM_midiOutGetNumDevs;
 WM_2 WinMM_midiOutGetDevCaps;
 WM_3 WinMM_midiOutOpen;
@@ -22,7 +22,7 @@ int WinMM_Setup(){
     return 1;
 }
 
-int WinMM_SendDirectData(DWORD event){
+void WinMM_SendDirectData(unsigned long int event){
     WinMM_midiOutShortMsg(handle, event);
 }
 
