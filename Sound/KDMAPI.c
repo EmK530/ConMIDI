@@ -3,7 +3,7 @@
 
 HMODULE KDMAPI_libHandle;
 typedef int(__stdcall *KDM_INIT)();
-typedef int(__stdcall *KDM_SEND)(DWORD);
+typedef void(__stdcall *KDM_SEND)(unsigned long int);
 KDM_INIT KDMAPI_InitializeKDMAPIStream;
 KDM_INIT KDMAPI_TerminateKDMAPIStream;
 KDM_INIT KDMAPI_ResetKDMAPIStream;
