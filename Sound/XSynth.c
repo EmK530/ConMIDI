@@ -3,7 +3,7 @@
 
 HMODULE XSynth_libHandle;
 typedef int(__stdcall *XS_INIT)();
-typedef int(__stdcall *XS_SEND)(DWORD);
+typedef void(__stdcall *XS_SEND)(unsigned long int);
 XS_INIT XSynth_InitializeKDMAPIStream;
 XS_INIT XSynth_TerminateKDMAPIStream;
 XS_INIT XSynth_ResetKDMAPIStream;
