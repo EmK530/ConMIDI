@@ -6,7 +6,7 @@
 #include "MIDI/LoadMIDI.c"
 
 FILE *file_ptr;
-char version[] = "v2.0.0";
+char version[] = "v2.0.1";
 char* title;
 int main(){
     printf("ConMIDI %s\n\n",version);
