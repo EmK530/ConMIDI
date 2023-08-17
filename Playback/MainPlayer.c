@@ -86,7 +86,7 @@ void StartPlayback(){
     startTime2 = getTimeMsec();
     cppq = ppq;
     Clock_Start();
-    int (*SendDirectData)(DWORD) = SendDirectDataPtr;
+    void (*SendDirectData)(unsigned long int) = SendDirectDataPtr;
     while(TRUE){
         StartTimeCheck();
         double newClock = Clock_GetTick();
