@@ -4,7 +4,7 @@
 #include "WinMM.c"
 #include "XSynth.c"
 
-int (*SendDirectDataPtr)(DWORD a);
+void (*SendDirectDataPtr)(unsigned long int a);
 
 int test = 0;
 BOOL usable[3];
