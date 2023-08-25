@@ -8,7 +8,6 @@
 FILE *file_ptr;
 char version[] = "v2.0.2-f2";
 char* title;
-unsigned int updateCP = 0;
 int main(int argc, char *argv[]){
     if(argc>1){
         int mode = 0;
@@ -24,7 +23,9 @@ int main(int argc, char *argv[]){
                 }
                 case 1:
                 {
-                    sscanf(argv[i], "%u", &updateCP);
+                    unsigned int i;
+                    sscanf(argv[i], "%u", &i);
+                    SetConsoleOutputCP(updateCP);
                 }
             }
         }
@@ -81,9 +82,6 @@ int main(int argc, char *argv[]){
             printf("Invalid path");
             memset(path, 0, sizeof(path));
         }
-    }
-    if(updateCP!=0){
-        SetConsoleOutputCP(updateCP);
     }
     unsigned int bufSize = 64;
     printf("\nLoading MIDI...");
