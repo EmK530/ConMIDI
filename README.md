@@ -18,7 +18,7 @@ If you have neither of these you can choose the "WinMM" device.
 
 ## How to build
 
-Get yourself a copy of GCC and use this command:
+Get yourself a copy of GCC (preferably TDM-GCC-64) and use this command:
 
 ```
 gcc ConMIDI.c -O3 -march=native -mtune=native -s -lcomdlg32 -o ConMIDI
