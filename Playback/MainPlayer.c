@@ -131,6 +131,7 @@ void StartPlayback(){
                                         printf("%c", range[i]);
                                     }
                                     free(range);
+                                    lyrtemp=FALSE;
                                 } else {
                                     break;
                                 }
