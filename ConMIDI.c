@@ -6,9 +6,30 @@
 #include "MIDI/LoadMIDI.c"
 
 FILE *file_ptr;
-char version[] = "v2.0.1";
+char version[] = "v2.0.2";
 char* title;
-int main(){
+int main(int argc, char *argv[]){
+    if(argc>1){
+        int mode = 0;
+        for(int i = 1; i < argc; i++){
+            switch(mode){
+                case 0:
+                {
+                    char* read = argv[i];
+                    if(strcmp(read,"-cp")==0){
+                        mode = 1;
+                    }
+                    break;
+                }
+                case 1:
+                {
+                    unsigned int i;
+                    sscanf(argv[i], "%u", &i);
+                    SetConsoleOutputCP(i);
+                }
+            }
+        }
+    }
     printf("ConMIDI %s\n\n",version);
     setupntdll();
     title = concat("ConMIDI ", version);
