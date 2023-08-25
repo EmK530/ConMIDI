@@ -25,7 +25,7 @@ int main(int argc, char *argv[]){
                 {
                     unsigned int i;
                     sscanf(argv[i], "%u", &i);
-                    SetConsoleOutputCP(updateCP);
+                    SetConsoleOutputCP(i);
                 }
             }
         }
