@@ -10,6 +10,7 @@ unsigned long int* trackReadOffset;
 unsigned char **trackReads;
 BOOL* prepareStep;
 BOOL* tempoEvent;
+BOOL* lyrics;
 byte* prevEvent;
 unsigned long long* trackPosition;
 
@@ -40,7 +41,11 @@ void StartTimeCheck()
     double tempT = getTimeMsec();
     if((long)(tempT-startTime1)>=16){
         if((long)(tempT-startTime2)>=1000){
-            printf("\nFPS: %.10g",(float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames));
+            float calc = (float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames);
+            if(calc<60){
+                printf("\nLag detected, FPS: %.10g",calc);
+            }
+            //printf("\nFPS: %.10g",);
             totalFrames = 0;
             startTime2 = tempT;
         }
@@ -66,6 +71,7 @@ unsigned long int *tRO;
 unsigned char *tR;
 BOOL *pStep;
 BOOL *tEv;
+BOOL *lyr;
 byte *prevE;
 void StartPlayback(){
     double clock = 0;
@@ -81,7 +87,9 @@ void StartPlayback(){
     prevEvent = (byte*)calloc(realTracks, sizeof(byte));
     prepareStep = (BOOL*)calloc(realTracks, sizeof(BOOL));
     tempoEvent = (BOOL*)calloc(realTracks, sizeof(BOOL));
+    lyrics = (BOOL*)calloc(realTracks, sizeof(BOOL));
     memset(trackFinished, FALSE, sizeof(trackFinished));
+    memset(lyrics, FALSE, sizeof(lyrics));
     startTime1 = getTimeMsec();
     startTime2 = getTimeMsec();
     cppq = ppq;
@@ -98,6 +106,7 @@ void StartPlayback(){
             pStep = &prepareStep[0];
             tEv = &tempoEvent[0];
             prevE = &prevEvent[0];
+            lyr = &lyrics[0];
             unsigned long long clockUInt64 = (unsigned long long)clock;
             BOOL *tF1 = &trackFinished[0];
             for(unsigned int i = 0; i < realTracks; i++){
@@ -106,8 +115,26 @@ void StartPlayback(){
                     unsigned long long tempPos = *tPos;
                     BOOL doloop = TRUE;
                     BOOL tempstep = *pStep;
+                    BOOL lyrtemp = *lyr;
                     while(TRUE){
                         if(tempstep){
+                            if(lyrtemp){
+                                if(tempPos<=clockUInt64){
+                                    byte len = *(tR++);
+                                    unsigned char* range = malloc(len+1);
+                                    for(int i = 0; i < len; i++){
+                                        *(range+i)=*(tR++);
+                                    }
+                                    range[len]='\0';
+                                    printf("\n");
+                                    for (int i = 0; i < len; i++) {
+                                        printf("%c", range[i]);
+                                    }
+                                    free(range);
+                                } else {
+                                    break;
+                                }
+                            }
                             unsigned long int event = 0;
                             byte tempPrev = *prevE;
                             while(doloop){
@@ -186,6 +213,24 @@ void StartPlayback(){
                                                 *tF1=TRUE;
                                                 aliveTracks--;
                                                 break;
+                                            } else if (readEvent == 0x05) {
+                                                if(tempPos<=clockUInt64){
+                                                    byte len = *(tR++);
+                                                    unsigned char* range = malloc(len+1);
+                                                    for(int i = 0; i < len; i++){
+                                                        *(range+i)=*(tR++);
+                                                    }
+                                                    range[len]='\0';
+                                                    printf("\n");
+                                                    for (int i = 0; i < len; i++) {
+                                                        printf("%c", range[i]);
+                                                    }
+                                                    free(range);
+                                                } else {
+                                                    lyrtemp=TRUE;
+                                                    doloop=FALSE;
+                                                    break;
+                                                }
                                             } else {
                                                 tR += *(tR++);
                                             }
@@ -194,6 +239,7 @@ void StartPlayback(){
                                     }
                                 }
                             }
+                            *lyr=lyrtemp;
                             *tPos=tempPos;
                             *prevE=tempPrev;
                             if(!doloop){
@@ -217,7 +263,7 @@ void StartPlayback(){
                     *tPos=tempPos;
                     trackReads[i] = tR;
                 }
-                *tF1++;*tPos++;*pStep++;*cEv++;*prevE++;*tEv++;
+                *tF1++;*tPos++;*pStep++;*cEv++;*prevE++;*tEv++;*lyr++;
             }
         } else {
             usleep(1000);
