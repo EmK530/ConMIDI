@@ -4,6 +4,7 @@ unsigned long long sentEvents = 0;
 unsigned long totalFrames = 0;
 double startTime1 = 0;
 double startTime2 = 0;
+BOOL metaAllow[10] = {FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE};
 
 unsigned long int* currEvent;
 unsigned long int* trackReadOffset;
@@ -223,29 +224,34 @@ void StartPlayback(){
                                                     aliveTracks--;
                                                     break;
                                                 }
+                                                case 0x01:
                                                 case 0x02:
                                                 case 0x05:
                                                 case 0x06:
                                                 case 0x07:
                                                 case 0x08:
                                                 {
-                                                    if(tempPos<=clockUInt64){
-                                                        byte len = *(tR++);
-                                                        unsigned char* range = malloc(len+1);
-                                                        for(int i = 0; i < len; i++){
-                                                            *(range+i)=*(tR++);
+                                                    if(metaAllow[readEvent]){
+                                                        if(tempPos<=clockUInt64){
+                                                            byte len = *(tR++);
+                                                            unsigned char* range = malloc(len+1);
+                                                            for(int i = 0; i < len; i++){
+                                                                *(range+i)=*(tR++);
+                                                            }
+                                                            range[len]='\0';
+                                                            metaPrint(readEvent);
+                                                            for (int i = 0; i < len; i++) {
+                                                                printf("%c", range[i]);
+                                                            }
+                                                            free(range);
+                                                        } else {
+                                                            doloop=FALSE;
+                                                            doloop2=FALSE;
+                                                            tempstep=FALSE;
+                                                            *eT=2;
                                                         }
-                                                        range[len]='\0';
-                                                        metaPrint(readEvent);
-                                                        for (int i = 0; i < len; i++) {
-                                                            printf("%c", range[i]);
-                                                        }
-                                                        free(range);
                                                     } else {
-                                                        doloop=FALSE;
-                                                        doloop2=FALSE;
-                                                        tempstep=FALSE;
-                                                        *eT=2;
+                                                        tR += *(tR++);
                                                     }
                                                     break;
                                                 }
