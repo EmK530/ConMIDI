@@ -223,7 +223,6 @@ void StartPlayback(){
                                                     aliveTracks--;
                                                     break;
                                                 }
-                                                case 0x01:
                                                 case 0x02:
                                                 case 0x05:
                                                 case 0x06:
