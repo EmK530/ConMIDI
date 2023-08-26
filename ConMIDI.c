@@ -18,14 +18,54 @@ int main(int argc, char *argv[]){
                     char* read = argv[i];
                     if(strcmp(read,"-cp")==0){
                         mode = 1;
+                    }else if(strcmp(read,"-hm")==0||strcmp(read,"-hidemeta")==0){
+                        for(int a = 0; a < 10; a++){
+                            metaAllow[a] = FALSE;
+                        }
+                    }else if(strcmp(read,"-sm")==0||strcmp(read,"-showmeta")==0){
+                        for(int a = 0; a < 10; a++){
+                            metaAllow[a] = TRUE;
+                        }
+                    }else if(strcmp(read,"-em")==0){
+                        mode = 2;
+                    }else if(strcmp(read,"-dm")==0){
+                        mode = 3;
+                    }else if(strcmp(read,"-fps")==0){
+                        showFpsOutsideLag = TRUE;
                     }
                     break;
                 }
                 case 1:
                 {
-                    unsigned int i;
-                    sscanf(argv[i], "%u", &i);
-                    SetConsoleOutputCP(i);
+                    unsigned int b;
+                    sscanf(argv[i], "%u", &b);
+                    SetConsoleOutputCP(b);
+                    mode = 0;
+                    break;
+                }
+                case 2:
+                {
+                    unsigned int b;
+                    sscanf(argv[i], "%u", &b);
+                    if(b>9){
+                        printf("\nCommand line error, -em parameter above 9 (set to %u)",b);
+                        exit(0);
+                    }
+                    metaAllow[b]=TRUE;
+                    mode = 0;
+                    break;
+                }
+                case 3:
+                {
+                    unsigned int b;
+                    sscanf(argv[i], "%u", &b);
+                    if(b>9){
+                        printf("\nCommand line error, -dm parameter above 9 (set to %u)",b);
+                        exit(0);
+                    }
+                    metaAllow[b]=TRUE;
+                    mode = 0;
+                    break;
                 }
             }
         }
