@@ -63,7 +63,7 @@ int main(int argc, char *argv[]){
                         printf("\nCommand line error, -dm parameter above 9 (set to %u)",b);
                         exit(0);
                     }
-                    metaAllow[b]=TRUE;
+                    metaAllow[b]=FALSE;
                     mode = 0;
                     break;
                 }
