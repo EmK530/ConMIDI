@@ -5,6 +5,7 @@ unsigned long totalFrames = 0;
 double startTime1 = 0;
 double startTime2 = 0;
 BOOL metaAllow[10] = {FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE};
+BOOL showFpsOutsideLag = FALSE;
 
 unsigned long int* currEvent;
 unsigned long int* trackReadOffset;
@@ -42,8 +43,12 @@ void StartTimeCheck()
     if((long)(tempT-startTime1)>=16){
         if((long)(tempT-startTime2)>=1000){
             float calc = (float)1/((float)(tempT-startTime2)/(float)1000/(float)totalFrames);
-            if(calc<60){
-                printf("\nLag detected, FPS: %.10g",calc);
+            if(showFpsOutsideLag){
+                printf("\nFPS: %.10g",calc);
+            } else {
+                if(calc<60){
+                    printf("\nLag detected, FPS: %.10g",calc);
+                }
             }
             //printf("\nFPS: %.10g",);
             totalFrames = 0;
