@@ -9,8 +9,7 @@ unsigned long int* currEvent;
 unsigned long int* trackReadOffset;
 unsigned char **trackReads;
 BOOL* prepareStep;
-BOOL* tempoEvent;
-BOOL* lyrics;
+unsigned char* eventType;
 byte* prevEvent;
 unsigned long long* trackPosition;
 
@@ -66,12 +65,37 @@ void StartTimeCheck()
     }
 }
 
+void metaPrint(byte meta){
+    switch(meta){
+        case 0x01:
+            printf("\nText: ");
+            break;
+        case 0x02:
+            printf("\nCopyright: ");
+            break;
+        case 0x05:
+            printf("\nLyric: ");
+            break;
+        case 0x06:
+            printf("\nMarker: ");
+            break;
+        case 0x07:
+            printf("\nCue: ");
+            break;
+        case 0x08:
+            printf("\nProgram: ");
+            break;
+        default:
+            printf("\nUnknown: ");
+            break;
+    }
+}
+
 unsigned long int *cEv;
 unsigned long int *tRO;
 unsigned char *tR;
 BOOL *pStep;
-BOOL *tEv;
-BOOL *lyr;
+unsigned char *eT;
 byte *prevE;
 void StartPlayback(){
     double clock = 0;
@@ -86,10 +110,8 @@ void StartPlayback(){
     trackPosition = (unsigned long long*)calloc(realTracks, sizeof(unsigned long long));
     prevEvent = (byte*)calloc(realTracks, sizeof(byte));
     prepareStep = (BOOL*)calloc(realTracks, sizeof(BOOL));
-    tempoEvent = (BOOL*)calloc(realTracks, sizeof(BOOL));
-    lyrics = (BOOL*)calloc(realTracks, sizeof(BOOL));
+    eventType = (unsigned char*)calloc(realTracks, sizeof(unsigned char));
     memset(trackFinished, FALSE, sizeof(trackFinished));
-    memset(lyrics, FALSE, sizeof(lyrics));
     startTime1 = getTimeMsec();
     startTime2 = getTimeMsec();
     cppq = ppq;
@@ -104,9 +126,8 @@ void StartPlayback(){
             unsigned long long *tPos = &trackPosition[0];
             cEv = &currEvent[0];
             pStep = &prepareStep[0];
-            tEv = &tempoEvent[0];
+            eT = &eventType[0];
             prevE = &prevEvent[0];
-            lyr = &lyrics[0];
             unsigned long long clockUInt64 = (unsigned long long)clock;
             BOOL *tF1 = &trackFinished[0];
             for(unsigned int i = 0; i < realTracks; i++){
@@ -114,28 +135,10 @@ void StartPlayback(){
                     tR = trackReads[i];
                     unsigned long long tempPos = *tPos;
                     BOOL doloop = TRUE;
+                    BOOL doloop2 = TRUE;
                     BOOL tempstep = *pStep;
-                    BOOL lyrtemp = *lyr;
-                    while(TRUE){
+                    while(doloop2){
                         if(tempstep){
-                            if(lyrtemp){
-                                if(tempPos<=clockUInt64){
-                                    byte len = *(tR++);
-                                    unsigned char* range = malloc(len+1);
-                                    for(int i = 0; i < len; i++){
-                                        *(range+i)=*(tR++);
-                                    }
-                                    range[len]='\0';
-                                    printf("\n");
-                                    for (int i = 0; i < len; i++) {
-                                        printf("%c", range[i]);
-                                    }
-                                    free(range);
-                                    lyrtemp=FALSE;
-                                } else {
-                                    break;
-                                }
-                            }
                             unsigned long int event = 0;
                             byte tempPrev = *prevE;
                             while(doloop){
@@ -162,7 +165,7 @@ void StartPlayback(){
                                         *cEv = (readEvent | (*(tR++) << 8) | (*(tR++) << 16));
                                         doloop=FALSE;
                                         tempstep=FALSE;
-                                        *tEv = FALSE;
+                                        *eT=0;
                                         break;
                                     }
                                 } else if (trackEvent == 0xC0 || trackEvent == 0xD0) {
@@ -173,7 +176,7 @@ void StartPlayback(){
                                         *cEv = (readEvent | (*(tR++) << 8));
                                         doloop=FALSE;
                                         tempstep=FALSE;
-                                        *tEv = FALSE;
+                                        *eT=0;
                                         break;
                                     }
                                 } else if (readEvent == 0) {
@@ -193,54 +196,69 @@ void StartPlayback(){
                                             break;
                                         case 0xFF: {
                                             readEvent = *(tR++);
-                                            if (readEvent == 0x51) {
-                                                tR++;
-                                                event = 0;
-                                                for (int i = 0; i != 3; i++) {
-                                                    byte temp = *(tR++);
-                                                    event = (event << 8) | temp;
-                                                }
-                                                if(tempPos<=clockUInt64){
-                                                    Clock_SubmitBPM(tempPos,event);
-                                                } else {
-                                                    *cEv = event;
-                                                    doloop=FALSE;
-                                                    tempstep=FALSE;
-                                                    *tEv = TRUE;
+                                            switch(readEvent){
+                                                case 0x51:
+                                                {
+                                                    tR++;
+                                                    event = 0;
+                                                    for (int i = 0; i != 3; i++) {
+                                                        byte temp = *(tR++);
+                                                        event = (event << 8) | temp;
+                                                    }
+                                                    if(tempPos<=clockUInt64){
+                                                        Clock_SubmitBPM(tempPos,event);
+                                                    } else {
+                                                        *cEv = event;
+                                                        doloop=FALSE;
+                                                        doloop2=FALSE;
+                                                        tempstep=FALSE;
+                                                        *eT=1;
+                                                    }
                                                     break;
                                                 }
-                                            } else if (readEvent == 0x2F) {
-                                                doloop=FALSE;
-                                                *tF1=TRUE;
-                                                aliveTracks--;
-                                                break;
-                                            } else if (readEvent == 0x05) {
-                                                if(tempPos<=clockUInt64){
-                                                    byte len = *(tR++);
-                                                    unsigned char* range = malloc(len+1);
-                                                    for(int i = 0; i < len; i++){
-                                                        *(range+i)=*(tR++);
-                                                    }
-                                                    range[len]='\0';
-                                                    printf("\n");
-                                                    for (int i = 0; i < len; i++) {
-                                                        printf("%c", range[i]);
-                                                    }
-                                                    free(range);
-                                                } else {
-                                                    lyrtemp=TRUE;
+                                                case 0x2F:
+                                                {
                                                     doloop=FALSE;
+                                                    *tF1=TRUE;
+                                                    aliveTracks--;
                                                     break;
                                                 }
-                                            } else {
-                                                tR += *(tR++);
+                                                case 0x01:
+                                                case 0x02:
+                                                case 0x05:
+                                                case 0x06:
+                                                case 0x07:
+                                                case 0x08:
+                                                {
+                                                    if(tempPos<=clockUInt64){
+                                                        byte len = *(tR++);
+                                                        unsigned char* range = malloc(len+1);
+                                                        for(int i = 0; i < len; i++){
+                                                            *(range+i)=*(tR++);
+                                                        }
+                                                        range[len]='\0';
+                                                        metaPrint(readEvent);
+                                                        for (int i = 0; i < len; i++) {
+                                                            printf("%c", range[i]);
+                                                        }
+                                                        free(range);
+                                                    } else {
+                                                        doloop=FALSE;
+                                                        doloop2=FALSE;
+                                                        tempstep=FALSE;
+                                                        *eT=2;
+                                                    }
+                                                    break;
+                                                }
+                                                default:
+                                                    tR += *(tR++);
+                                                    break;
                                             }
                                             break;
                                         }
                                     }
                                 }
                             }
-                            *lyr=lyrtemp;
                             *tPos=tempPos;
                             *prevE=tempPrev;
                             if(!doloop){
@@ -249,11 +267,30 @@ void StartPlayback(){
                         } else {
                             if(tempPos<=clockUInt64){
                                 tempstep=TRUE;
-                                if(*tEv==FALSE){
-                                    SendDirectData(*cEv);
-                                    sentEvents++;
-                                } else {
-                                    Clock_SubmitBPM(tempPos,*cEv);
+                                switch(*eT){
+                                    case 0:
+                                        SendDirectData(*cEv);
+                                        sentEvents++;
+                                        break;
+                                    case 1:
+                                        Clock_SubmitBPM(tempPos,*cEv);
+                                        break;
+                                    case 2:
+                                    {
+                                        tR--;
+                                        byte metaType = *(tR++);
+                                        byte len = *(tR++);
+                                        unsigned char* range = malloc(len+1);
+                                        for(int i = 0; i < len; i++){
+                                            *(range+i)=*(tR++);
+                                        }
+                                        range[len]='\0';
+                                        metaPrint(metaType);
+                                        for (int i = 0; i < len; i++) {
+                                            printf("%c", range[i]);
+                                        }
+                                        free(range);
+                                    }
                                 }
                             } else {
                                 break;
@@ -264,7 +301,7 @@ void StartPlayback(){
                     *tPos=tempPos;
                     trackReads[i] = tR;
                 }
-                *tF1++;*tPos++;*pStep++;*cEv++;*prevE++;*tEv++;*lyr++;
+                *tF1++;*tPos++;*pStep++;*cEv++;*prevE++;*eT++;
             }
         } else {
             usleep(1000);
