@@ -117,10 +117,8 @@ void StartPlayback(){
     prevEvent = (byte*)calloc(realTracks, sizeof(byte));
     prepareStep = (BOOL*)calloc(realTracks, sizeof(BOOL));
     eventType = (unsigned char*)calloc(realTracks, sizeof(unsigned char));
-    for(int i = 0; i < realTracks; i++){
-        trackFinished[i] = FALSE;
-        prepareStep[i] = TRUE;
-    }
+    memset(trackFinished,FALSE,sizeof(BOOL)*realTracks);
+    memset(prepareStep,TRUE,sizeof(BOOL)*realTracks);
     startTime1 = getTimeMsec();
     startTime2 = getTimeMsec();
     cppq = ppq;
