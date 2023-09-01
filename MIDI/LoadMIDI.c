@@ -71,6 +71,7 @@ void LoadMIDI(char path[], unsigned int bs){
     tracks = realloc(tracks, realTracks * sizeof(unsigned char*));
     printf("\nLoaded %d tracks",realTracks);
     free(buffer);
+    fclose(midi);
     printf("\nBeginning playback...\n");
     StartPlayback();
 }
