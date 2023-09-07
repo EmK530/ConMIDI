@@ -2,22 +2,22 @@
 #include <windows.h>
 #include "KDMAPI.c"
 #include "WinMM.c"
-#include "XSynth.c"
 
 void (*SendDirectDataPtr)(unsigned long int a);
+int (*SendDirectLongDataPtr)(MIDIHDR* a, unsigned int b);
+int (*PrepareLongDataPtr)(MIDIHDR* a, unsigned int b);
+int (*UnprepareLongDataPtr)(MIDIHDR* a, unsigned int b);
 
 int test = 0;
-BOOL usable[3];
+BOOL usable[2];
 int usables = 0;
 void Sound_Setup(){
     if(KDMAPI_Setup()==1){usable[0]=TRUE;usables++;};
     if(WinMM_Setup()==1){usable[1]=TRUE;usables++;};
-    if(XSynth_Setup()==1){usable[2]=TRUE;usables++;};
     if(usables > 1){
         printf("\nSound selection:\n");
         if(usable[0]){printf("1: KDMAPI\n");}
         if(usable[1]){printf("2: WinMM\n");}
-        if(usable[2]){printf("3: XSynth\n");}
     }
     /*
     if(usable[0]){
@@ -40,6 +40,9 @@ int Sound_Init(int id){
                     if(res==1){
                         printf("KDMAPI Initialized\n");
                         SendDirectDataPtr = KDMAPI_SendDirectData;
+                        SendDirectLongDataPtr = KDMAPI_SendDirectLongData;
+                        PrepareLongDataPtr = KDMAPI_PrepareLongData;
+                        UnprepareLongDataPtr = KDMAPI_UnprepareLongData;
                         test=id;
                         return 1;
                     } else {
@@ -54,6 +57,9 @@ int Sound_Init(int id){
                     if(res==1){
                         printf("WinMM Initialized\n");
                         SendDirectDataPtr = WinMM_SendDirectData;
+                        SendDirectLongDataPtr = WinMM_SendDirectLongData;
+                        PrepareLongDataPtr = WinMM_PrepareLongData;
+                        UnprepareLongDataPtr = WinMM_UnprepareLongData;
                         test=id;
                         return 1;
                     } else {
@@ -61,20 +67,6 @@ int Sound_Init(int id){
                         return 0;
                     }
                 }
-            case 3:
-                {
-                    int res = XSynth_InitializeKDMAPIStream();
-                    if(res==1){
-                        printf("XSynth Initialized\n");
-                        SendDirectDataPtr = XSynth_SendDirectData;
-                        test=id;
-                        return 1;
-                    } else {
-                        printf("XSynth failed to initialize\n");
-                        return 0;
-                    }
-                }
-                break;
             default:
                 printf("Unknown device ID\n");
                 return 0;

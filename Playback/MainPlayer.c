@@ -124,6 +124,9 @@ void StartPlayback(){
     cppq = ppq;
     Clock_Start();
     void (*SendDirectData)(unsigned long int) = SendDirectDataPtr;
+    int (*SendDirectLongData)(MIDIHDR* a, unsigned int b) = SendDirectLongDataPtr;
+    int (*PrepareLongData)(MIDIHDR* a, unsigned int b) = PrepareLongDataPtr;
+    int (*UnprepareLongData)(MIDIHDR* a, unsigned int b) = UnprepareLongDataPtr;
     while(TRUE){
         StartTimeCheck();
         double newClock = Clock_GetTick();
@@ -192,7 +195,34 @@ void StartPlayback(){
                                 } else {
                                     switch (readEvent) {
                                         case 0b11110000: {
-                                            while (*(tR++) != 0b11110111);
+                                            unsigned int size = *(tR++);
+                                            unsigned char* arr=(unsigned char*)malloc(size);
+                                            int pos = 0;
+                                            arr[0] = 0xF0;
+                                            while ((arr[++pos]=*(tR++))!=0b11110111);
+                                            MIDIHDR longdata;
+                                            memset(&longdata, 0, sizeof(longdata));
+                                            longdata.lpData = (LPBYTE)&arr[0];
+                                            longdata.dwBufferLength = size;
+                                            longdata.dwBytesRecorded = size;
+                                            longdata.dwFlags = 0;
+                                            UINT error = PrepareLongData(&longdata,sizeof(longdata));
+                                            if(!error){
+                                                //printf("\nPrepared SysEx");
+                                                error = SendDirectLongData(&longdata,sizeof(longdata));
+                                                if(error){
+                                                    printf("\nCould not play SysEx, error %lu", error);
+                                                } else {
+                                                    sentEvents++;
+                                                }
+                                                while(MIDIERR_STILLPLAYING == UnprepareLongData(&longdata,sizeof(longdata))){
+                                                    printf("\nFailed to unprepare SysEx, retrying...");
+                                                    usleep(1000);
+                                                }
+                                            } else {
+                                                printf("\nFailed to prepare SysEx");
+                                            }
+                                            free(arr);
                                             break;
                                         }
                                         case 0b11110010:
