@@ -12,8 +12,6 @@ I am a new C programmer, so there can very well be some bad practices used in th
 
 Recommended use with this MIDI player for performance is the [OmniMIDI](https://github.com/KeppySoftware/OmniMIDI/releases) synth.
 
-XSynth is also supported, similar to SharpMIDI you can use a XSynth DLL named "XSynth.dll"
-
 If you have neither of these you can choose the "WinMM" device.
 
 ## How to build
