@@ -12,7 +12,7 @@ I am a new C programmer, so there can very well be some bad practices used in th
 
 Recommended use with this MIDI player for performance is the [OmniMIDI](https://github.com/KeppySoftware/OmniMIDI/releases) synth.
 
-If you have neither of these you can choose the "WinMM" device.
+If you don't have OmniMIDI, you can choose the "WinMM" device.
 
 ## How to build
 
