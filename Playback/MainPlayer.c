@@ -96,10 +96,54 @@ void metaPrint(byte meta){
             break;
     }
 }
-
+void (*SendDirectData)(unsigned long int);
+int (*SendDirectLongData)(MIDIHDR* a, unsigned int b);
+int (*PrepareLongData)(MIDIHDR* a, unsigned int b);
+int (*UnprepareLongData)(MIDIHDR* a, unsigned int b);
+unsigned char *tR;
+void handleSysEx(){
+    unsigned int size = 64;
+    unsigned char* arr=(unsigned char*)malloc(size);
+    int pos = 1;
+    arr[0] = 0xF0;
+    tR++;
+    while((arr[pos]=*(tR++))!=0b11110111){
+        pos++;
+        if(pos>=size){
+            size *= 2;
+            arr = (unsigned char*)realloc(arr, size);
+        }
+    }
+    MIDIHDR longdata;
+    memset(&longdata, 0, sizeof(longdata));
+    longdata.lpData = (LPBYTE)&arr[0];
+    longdata.dwBufferLength = pos+1;
+    longdata.dwBytesRecorded = pos+1;
+    longdata.dwFlags = 0;
+    UINT error = PrepareLongData(&longdata,sizeof(longdata));
+    if(!error){
+        //printf("\nPrepared SysEx");
+        error = SendDirectLongData(&longdata,sizeof(longdata));
+        //printf("\n");
+        //for(int a = 0; a < pos+1; a++){
+            //printf("%X ",arr[a]);
+        //}
+        if(error){
+            printf("\nCould not play SysEx, error %lu", error);
+        } else {
+            sentEvents++;
+        }
+        while(MIDIERR_STILLPLAYING == UnprepareLongData(&longdata,sizeof(longdata))){
+            printf("\nFailed to unprepare SysEx, retrying...");
+            usleep(1000);
+        }
+    } else {
+        printf("\nFailed to prepare SysEx");
+    }
+    free(arr);
+}
 unsigned long int *cEv;
 unsigned long int *tRO;
-unsigned char *tR;
 BOOL *pStep;
 unsigned char *eT;
 byte *prevE;
@@ -123,10 +167,10 @@ void StartPlayback(){
     startTime2 = getTimeMsec();
     cppq = ppq;
     Clock_Start();
-    void (*SendDirectData)(unsigned long int) = SendDirectDataPtr;
-    int (*SendDirectLongData)(MIDIHDR* a, unsigned int b) = SendDirectLongDataPtr;
-    int (*PrepareLongData)(MIDIHDR* a, unsigned int b) = PrepareLongDataPtr;
-    int (*UnprepareLongData)(MIDIHDR* a, unsigned int b) = UnprepareLongDataPtr;
+    SendDirectData = SendDirectDataPtr;
+    SendDirectLongData = SendDirectLongDataPtr;
+    PrepareLongData = PrepareLongDataPtr;
+    UnprepareLongData = UnprepareLongDataPtr;
     while(TRUE){
         StartTimeCheck();
         double newClock = Clock_GetTick();
@@ -194,35 +238,16 @@ void StartPlayback(){
                                     break;
                                 } else {
                                     switch (readEvent) {
-                                        case 0b11110000: {
-                                            unsigned int size = *(tR++);
-                                            unsigned char* arr=(unsigned char*)malloc(size);
-                                            int pos = 0;
-                                            arr[0] = 0xF0;
-                                            while ((arr[++pos]=*(tR++))!=0b11110111);
-                                            MIDIHDR longdata;
-                                            memset(&longdata, 0, sizeof(longdata));
-                                            longdata.lpData = (LPBYTE)&arr[0];
-                                            longdata.dwBufferLength = size;
-                                            longdata.dwBytesRecorded = size;
-                                            longdata.dwFlags = 0;
-                                            UINT error = PrepareLongData(&longdata,sizeof(longdata));
-                                            if(!error){
-                                                //printf("\nPrepared SysEx");
-                                                error = SendDirectLongData(&longdata,sizeof(longdata));
-                                                if(error){
-                                                    printf("\nCould not play SysEx, error %lu", error);
-                                                } else {
-                                                    sentEvents++;
-                                                }
-                                                while(MIDIERR_STILLPLAYING == UnprepareLongData(&longdata,sizeof(longdata))){
-                                                    printf("\nFailed to unprepare SysEx, retrying...");
-                                                    usleep(1000);
-                                                }
+                                        case 0b11110000:
+                                        {
+                                            if(tempPos<=clockUInt64){
+                                                handleSysEx(tR);
                                             } else {
-                                                printf("\nFailed to prepare SysEx");
+                                                doloop = FALSE;
+                                                doloop2 = FALSE;
+                                                tempstep = FALSE;
+                                                *eT=3;
                                             }
-                                            free(arr);
                                             break;
                                         }
                                         case 0b11110010:
@@ -331,6 +356,12 @@ void StartPlayback(){
                                             printf("%c", range[i]);
                                         }
                                         free(range);
+                                        break;
+                                    }
+                                    case 3:
+                                    {
+                                        handleSysEx(tR);
+                                        break;
                                     }
                                 }
                             } else {
