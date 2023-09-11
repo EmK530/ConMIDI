@@ -376,7 +376,9 @@ void StartPlayback(){
                 *tF1++;*tPos++;*pStep++;*cEv++;*prevE++;*eT++;
             }
         } else {
-            usleep(1000);
+            //usleep(1000);
+            signed long long slp = -1;
+            NtSleep(&slp);
         }
         if(aliveTracks == 0){
             printf("\nRan out of events, playback finished.");
