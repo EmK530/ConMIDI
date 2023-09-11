@@ -38,7 +38,7 @@ char* concat(const char* str1, const char* str2) {
 HMODULE ntdll_libHandle;
 char ntdllAvailable = 0;
 signed long long start = 0;
-typedef unsigned int(__stdcall *NtDE)(unsigned char, signed long long);
+typedef unsigned int(__stdcall *NtDE)(unsigned char, signed long long*);
 typedef unsigned int(__stdcall *NtQST)(signed long long*);
 NtDE NtDelayExecution;
 NtQST NtQuerySystemTime;
@@ -53,7 +53,7 @@ double getTimeMsec(void) {
         return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000);
     }
 }
-void NtSleep(signed long long t){
+void NtSleep(signed long long t*){
     NtDelayExecution(0, t);
 }
 void setupntdll(){
