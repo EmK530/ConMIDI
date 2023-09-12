@@ -19,7 +19,7 @@ If you don't have OmniMIDI, you can choose the "WinMM" device.
 Get yourself a copy of GCC and use this command:
 
 ```
-gcc ConMIDI.c -O3 -s -lcomdlg32 -o ConMIDI
+gcc ConMIDI.c -O3 -Os -s -lcomdlg32 -o ConMIDI
 ```
 
 ## Credits
