@@ -4,8 +4,8 @@ unsigned long long sentEvents = 0;
 unsigned long totalFrames = 0;
 double startTime1 = 0;
 double startTime2 = 0;
-BOOL metaAllow[10] = {FALSE,FALSE,TRUE,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,TRUE};
-BOOL showFpsOutsideLag = FALSE;
+BOOL metaAllow[10] = {FALSE,FALSE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE};
+BOOL showFpsOutsideLag = TRUE;
 
 unsigned long int* currEvent;
 unsigned long int* trackReadOffset;
