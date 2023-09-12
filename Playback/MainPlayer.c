@@ -15,24 +15,25 @@ unsigned char* eventType;
 byte* prevEvent;
 unsigned long long* trackPosition;
 
-char* AddCommas(char* num){
+char* AddCommas(const char* num) {
     int len = strlen(num);
-    int commas = (len-1)/3;
-    int len2 = len+commas;
-    char *newnum = (char *)malloc(len2+1);
-    int j,k = 0;
-    for(int i=len-1; i>=0; i--){
-        newnum[j++] = num[i];
-        k++;
-        if(k%3==0&&i>0){
-            newnum[j++] = ',';
-        }
-    }
+    int commas = (len - 1) / 3;
+    int len2 = len + commas;
+    char* newnum = (char*)malloc(len2 + 1);
     newnum[len2] = '\0';
-    for (int i = 0; i < len2 / 2; i++) {
-        char temp = newnum[i];
-        newnum[i] = newnum[len2-i-1];
-        newnum[len2-i-1] = temp;
+    int i = len - 1;
+    int j = len2 - 1;
+    int k = 0;
+    while (i >= 0) {
+        newnum[j] = num[i];
+        i--;
+        j--;
+        k++;
+        if (k == 3 && i >= 0) {
+            newnum[j] = ',';
+            j--;
+            k = 0;
+        }
     }
     return newnum;
 }
