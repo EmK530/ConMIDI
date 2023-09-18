@@ -6,7 +6,7 @@
 #include "MIDI/LoadMIDI.c"
 
 FILE *file_ptr;
-char version[] = "v2.0.8";
+char version[] = "v2.0.9";
 char* title;
 int main(int argc, char *argv[]){
     if(argc>1){
