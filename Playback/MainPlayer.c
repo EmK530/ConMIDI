@@ -309,7 +309,7 @@ void StartPlayback(){
                                                             range[len]='\0';
                                                             metaPrint(readEvent);
                                                             for (int i = 0; i < len; i++) {
-                                                                printf("%X", range[i]);
+                                                                printf("%c", range[i]);
                                                             }
                                                             free(range);
                                                         } else {
@@ -319,7 +319,14 @@ void StartPlayback(){
                                                             *eT=2;
                                                         }
                                                     } else {
-                                                        tR += *(tR++);
+                                                        unsigned long int len = 0;
+                                                        byte temp = 0;
+                                                        do
+                                                        {
+                                                            temp = *(tR++);
+                                                            len = (len << 7) | (temp & 0x7F);
+                                                        } while (temp & 0x80);
+                                                        tR += len;
                                                     }
                                                     break;
                                                 }
