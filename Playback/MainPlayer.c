@@ -295,7 +295,13 @@ void StartPlayback(){
                                                 {
                                                     if(metaAllow[readEvent]){
                                                         if(tempPos<=clockUInt64){
-                                                            byte len = *(tR++);
+                                                            unsigned long int len = 0;
+                                                            byte temp = 0;
+                                                            do
+                                                            {
+                                                                temp = *(tR++);
+                                                                len = (len << 7) | (temp & 0x7F);
+                                                            } while (temp & 0x80);
                                                             unsigned char* range = malloc(len+1);
                                                             for(int i = 0; i < len; i++){
                                                                 *(range+i)=*(tR++);
@@ -303,7 +309,7 @@ void StartPlayback(){
                                                             range[len]='\0';
                                                             metaPrint(readEvent);
                                                             for (int i = 0; i < len; i++) {
-                                                                printf("%c", range[i]);
+                                                                printf("%X", range[i]);
                                                             }
                                                             free(range);
                                                         } else {
@@ -346,7 +352,13 @@ void StartPlayback(){
                                     {
                                         tR--;
                                         byte metaType = *(tR++);
-                                        byte len = *(tR++);
+                                        unsigned long int len = 0;
+                                        byte temp = 0;
+                                        do
+                                        {
+                                            temp = *(tR++);
+                                            len = (len << 7) | (temp & 0x7F);
+                                        } while (temp & 0x80);
                                         unsigned char* range = malloc(len+1);
                                         for(int i = 0; i < len; i++){
                                             *(range+i)=*(tR++);
