@@ -2,7 +2,7 @@
 #include <time.h>
 
 char* prgTitle;
-float timee = 0;
+double timee = 0;
 unsigned int cppq = 0;
 double bpm = 120;
 double ticklen = 0;
