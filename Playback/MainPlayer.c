@@ -144,7 +144,6 @@ void handleSysEx(){
     free(arr);
 }
 unsigned long int *cEv;
-unsigned long int *tRO;
 BOOL *pStep;
 unsigned char *eT;
 byte *prevE;
