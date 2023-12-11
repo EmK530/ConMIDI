@@ -27,5 +27,3 @@ gcc ConMIDI.c -O3 -Os -s -lcomdlg32 -o ConMIDI
 #### Contributors:
 
 [Lurmog](https://github.com/Lurmog) (File dialog support)
-
-#### Zenith-MIDI's [MidiTrack.cs](https://github.com/arduano/Zenith-MIDI/blob/master/BMEngine/MidiTrack.cs) which the loading code is inspired by.
