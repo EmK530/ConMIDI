@@ -19,11 +19,11 @@ If you don't have OmniMIDI, you can choose the "WinMM" device.
 Get yourself a copy of GCC and use this command:
 
 ```
-gcc ConMIDI.c -O3 -Os -s -lcomdlg32 -o ConMIDI
+gcc ConMIDI.c Essentials.c BufferFile.c MIDI\LoadMIDI.c Sound\Sound.c Sound\WinMM.c Sound\KDMAPI.c Playback\MainPlayer.c Playback\MIDIClock.c MIDI\DataStorage.c -O3 -Os -s -lcomdlg32 -o ConMIDI
 ```
 
 ## Credits
 
 #### Contributors:
 
-[Lurmog](https://github.com/Lurmog) (File dialog support)
+[Lurmog](https://github.com/Lurmog) (File dialog support & Adding header files to fix my terrible code)
