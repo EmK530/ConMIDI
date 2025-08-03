@@ -2,9 +2,8 @@ add_rules("mode.debug", "mode.release")
 
 target("ConMIDI")
     set_kind("binary")
-    add_files("src/*.c")
-    add_files("src/**/*.c")
-    add_links("Comdlg32")
+    add_files("src/**.c")
+    add_syslinks("Comdlg32")
     if is_plat("windows") and is_mode("release") then
         add_cflags("/Ox", "/Oi", "/GL", "/fp:fast", "/Gy", "/Ob2", "/GS-", "/Oy", "/DNDEBUG", "/arch:AVX2")
         add_ldflags("/LTCG")
@@ -93,4 +92,5 @@ target("ConMIDI")
 --
 -- @endcode
 --
+
 
