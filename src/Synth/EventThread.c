@@ -16,7 +16,7 @@ int RUN = 1;
 unsigned long int writes = 0;
 unsigned long int eventBuffer[BUFFER_SIZE];
 unsigned long int* initialPtr2 = &eventBuffer[0];
-unsigned long int* endPtr2 = &eventBuffer[BUFFER_SIZE-1];
+unsigned long int* endPtr2 = &eventBuffer[BUFFER_SIZE];
 volatile unsigned long int* writePtr = &eventBuffer[0];
 
 static bool running = true;
@@ -28,7 +28,7 @@ static bool running = true;
 #endif
 {
     unsigned long int* readPtr = &eventBuffer[0];
-    unsigned long int* endPtr = &eventBuffer[BUFFER_SIZE-1];
+    unsigned long int* endPtr = &eventBuffer[BUFFER_SIZE];
     unsigned long int* initialPtr = readPtr;
     while (running) {
         while (readPtr != writePtr) {
@@ -58,4 +58,5 @@ void EventThread_Init() {
 
 void EventThread_Shutdown() {
     running = false;
+
 }
